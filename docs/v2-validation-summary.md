@@ -8,7 +8,7 @@
 - V2 入口：[`public/v2/index.html`](public/v2/index.html)
 - V1 旧版（历史）：[`public/index.html`](public/index.html)
 
-## 实测通过
+## 实测通过（最终线上 commit `52f8833` 及后续 docs commit）
 
 ### Lab engine（纯逻辑）
 - `node public/v2/lab/tests/run-tests.mjs` → **22/22 passed, 0 failed**。
@@ -30,7 +30,7 @@
 
 ### 资产下载
 - `robot_whole.glb` 859276b / `B02.glb` 71548b，HTTP 200，glTF magic 合法。
-- （GLTFLoader 回读下载对象 BBox 由独立代理最后确认；静态 11 模型 world bbox 已通过。）
+- **GLTFLoader 回读下载对象 BBox 通过**：whole 0.189×0.222×0.158m，B02 0.18×0.15×0.13m，center 0，与静态 11 模型一致。
 
 ## 未覆盖 / 边界（勿误读）
 
