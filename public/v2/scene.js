@@ -378,17 +378,17 @@ export function createProductScene(container, opts = {}) {
   psu.position.set(-220, 0, -80);
   scene.add(psu);
 
-  // Breadboard with probes (P/N/G clickable spheres)
+  // Breadboard with probes (P/N/G clickable spheres) - visible on desk in front-left of robot
   const bb = new THREE.Group();
   const bbBase = new THREE.Mesh(new THREE.BoxGeometry(110, 8, 70), matShell);
   bbBase.position.y = 4; bbBase.receiveShadow = true;
   bb.add(bbBase);
-  // Probe spheres
+  // Probe spheres (8mm diameter, colored)
   const probeColors = { P: 0xd32f2f, N: 0x1976d2, G: 0x388e3c };
   const probeMeshes = {};
   [['P', -30, 15], ['N', 0, 15], ['G', 30, 15]].forEach(([name, x, z]) => {
     const s = new THREE.Mesh(
-      new THREE.SphereGeometry(5, 16, 16),
+      new THREE.SphereGeometry(4, 16, 16),
       new THREE.MeshStandardMaterial({ color: probeColors[name], roughness: 0.4, emissive: probeColors[name], emissiveIntensity: 0.2 })
     );
     s.position.set(x, 12, z);
@@ -396,13 +396,31 @@ export function createProductScene(container, opts = {}) {
     bb.add(s);
     probeMeshes[name] = s;
   });
-  bb.position.set(0, 0, 40);
+  // Resistor R1 and R2 (small cylinders) connecting P-N and N-G
+  const resistorMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.7 });
+  const r1 = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 25, 8), resistorMat);
+  r1.rotation.z = Math.PI / 2;
+  r1.position.set(-15, 12, 15);
+  bb.add(r1);
+  const r2 = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 25, 8), resistorMat);
+  r2.rotation.z = Math.PI / 2;
+  r2.position.set(15, 12, 15);
+  bb.add(r2);
+  // Wire from P to PSU (left side)
+  const wireMat = new THREE.MeshStandardMaterial({ color: 0x424242, roughness: 0.5 });
+  const wire1 = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 90, 6), wireMat);
+  wire1.rotation.z = Math.PI / 2.5;
+  wire1.position.set(-75, 8, -20);
+  bb.add(wire1);
+  // Position: left-front of robot, fully visible on desk
+  bb.position.set(-120, 0, 135);
   scene.add(bb);
 
-  // Raycaster for probe clicks
+  // Raycaster for probe clicks (only when probes visible and not in model mode)
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   renderer.domElement.addEventListener('click', (e) => {
+    if (modelMode || !bb.visible) return; // Don't raycast in model mode or when hidden
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -628,6 +646,19 @@ export function createProductScene(container, opts = {}) {
     getDiagnostics() {
       const box = new THREE.Box3().setFromObject(robot);
       const size = box.getSize(new THREE.Vector3());
+      // Compute probe projected canvas positions
+      const probeProjected = {};
+      Object.entries(probeMeshes).forEach(([name, mesh]) => {
+        const worldPos = new THREE.Vector3();
+        mesh.getWorldPosition(worldPos);
+        const projected = worldPos.clone().project(camera);
+        const rect = renderer.domElement.getBoundingClientRect();
+        probeProjected[name] = {
+          worldXYZ: [worldPos.x, worldPos.y, worldPos.z],
+          canvasXY: [(projected.x + 1) / 2 * rect.width, (1 - projected.y) / 2 * rect.height],
+          visible: mesh.visible && bb.visible && !modelMode,
+        };
+      });
       return {
         threeRevision: THREE.REVISION,
         rendererInfo: renderer.info,
@@ -637,6 +668,8 @@ export function createProductScene(container, opts = {}) {
         robotBBox: { w: size.x, h: size.y, d: size.z },
         cameraPosition: camera.position.toArray(),
         fovConeVisible: fovConeMesh ? fovConeMesh.visible : false,
+        modelMode: modelMode,
+        probeProjected: probeProjected,
       };
     },
 

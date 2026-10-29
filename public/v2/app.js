@@ -8,6 +8,7 @@ import { createProductScene } from './scene.js';
 
 // ===== DOM 引用 =====
 const $ = (id) => document.getElementById(id);
+
 const el = {
   // 顶栏
   tabFree: $('tab-free'), tabChallenge: $('tab-challenge'),
@@ -42,7 +43,7 @@ const el = {
   correctionInputs: $('correction-inputs'), corrE: $('corr-E'), corrR1: $('corr-R1'), corrR2: $('corr-R2'),
   btnApplyCorrection: $('btn-apply-correction'), reviewError: $('review-error'),
   reflectText: $('reflect-text'), btnReflect: $('btn-reflect'), reflectError: $('reflect-error'),
-  btnReset: $('btn-reset'), derivedLine: $('derived-line'),
+  btnReset: $('btn-reset'), btnPause: $('btn-pause'), pausedBanner: $('paused-banner'), derivedLine: $('derived-line'),
   toast: $('toast'),
   // 结构抽屉
   structureDrawer: $('structure-drawer'), btnCloseStructure: $('btn-close-structure'),
@@ -60,6 +61,7 @@ const state = {
   scene: null,             // scene API 对象
   fovOn: false,
   selectedPart: null,
+  paused: false,           // 课堂暂停：UI 层 gate，不冻结 3D 相机
 };
 
 // ===== 工具 =====
@@ -244,14 +246,20 @@ function render() {
   const canApplyCorrection = s.permittedActions.includes('applyCorrection');
   el.correctionInputs.classList.toggle('hidden', !canApplyCorrection);
 
-  // 按钮启用态：完全由 permittedActions 派生
-  setEnabled(el.btnPredict, s.permittedActions.includes('predict'));
-  setEnabled(el.btnMeasure, s.permittedActions.includes('measure'));
-  setEnabled(el.btnApplyConfig, s.permittedActions.includes('setConfiguration'));
-  setEnabled(el.btnRequestReview, s.permittedActions.includes('requestTeacherReview'));
-  setEnabled(el.btnApprove, s.permittedActions.includes('approveCorrection'));
-  setEnabled(el.btnApplyCorrection, canApplyCorrection);
-  setEnabled(el.btnReflect, s.permittedActions.includes('reflect'));
+  // 按钮启用态：permittedActions 派生；paused 时全部禁用（reset/pause 自身除外）
+  const gate = (ok) => ok && !state.paused;
+  setEnabled(el.btnPredict, gate(s.permittedActions.includes('predict')));
+  setEnabled(el.btnMeasure, gate(s.permittedActions.includes('measure')));
+  setEnabled(el.btnApplyConfig, gate(s.permittedActions.includes('setConfiguration')));
+  setEnabled(el.btnRequestReview, gate(s.permittedActions.includes('requestTeacherReview')));
+  setEnabled(el.btnApprove, gate(s.permittedActions.includes('approveCorrection')));
+  setEnabled(el.btnApplyCorrection, gate(canApplyCorrection));
+  setEnabled(el.btnReflect, gate(s.permittedActions.includes('reflect')));
+  setEnabled(el.btnHint, gate(s.permittedActions.includes('requestHint')));
+
+  // 暂停 UI 态
+  el.pausedBanner.hidden = !state.paused;
+  el.btnPause.textContent = state.paused ? '继续实验' : '暂停实验';
 
   // 同步场景 3D
   if (state.scene && state.scene.updateLab) {
@@ -285,6 +293,7 @@ function updateProbeIndicators(probes) {
 // ===== 节点点击（SVG 与 3D 共用同一回调） =====
 function handleProbeSelect(node) {
   if (!node || !NODE_POS[node]) return;
+  if (state.paused) { toast('课堂暂停中，探针锁定'); return; }
   // 写入当前 active 探针对应的下拉框
   if (state.activeProbe === 'A') el.probeASelect.value = node;
   else el.probeBSelect.value = node;
@@ -467,10 +476,18 @@ function bindEvents() {
   // 重置
   el.btnReset.addEventListener('click', () => {
     if (!lab) return;
+    state.paused = false;
     lab.reset();
     el.reflectText.value = '';
     el.corrE.value = el.corrR1.value = el.corrR2.value = '';
     toast('已重置到初始场景');
+    render();
+  });
+
+  el.btnPause.addEventListener('click', () => {
+    if (!lab) return;
+    state.paused = !state.paused;
+    toast(state.paused ? '课堂暂停，仍可观察模型' : '已继续实验');
     render();
   });
 

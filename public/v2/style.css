@@ -478,6 +478,17 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   line-height: 1.4;
 }
 
+.paused-banner {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fff8e1;
+  border: 1px solid #ffb300;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6d4c00;
+  text-align: center;
+}
+
 /* 自由探究：配置信息 */
 .config-info { display: flex; flex-direction: column; gap: 6px; }
 .config-row {
