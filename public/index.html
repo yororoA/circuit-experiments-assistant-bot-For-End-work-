@@ -65,6 +65,10 @@ button.primary{background:#00838f;border-color:#00838f}
         <button id="btnZoomOut">−</button>
         <button id="btnZoomIn">+</button>
       </div>
+      <div class="btn-row">
+        <button id="btnModelMode" class="primary">模型查看</button>
+        <button id="btnReturnAssembly" disabled>恢复装配</button>
+      </div>
       <div style="margin-top:4px;font-size:10px;">爆炸视图 <input type="range" id="explode-slider" min="0" max="1" step="0.01" value="0" style="width:100%"></div>
     </div>
     <div class="sidebar-section">
@@ -169,6 +173,8 @@ controls.minDistance = 80; controls.maxDistance = 1200;
 controls.maxPolarAngle = Math.PI/2 - 0.05;
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const hemi = new THREE.HemisphereLight(0xffffff, 0x5d4037, 0.6);
+scene.add(hemi);
 const dir = new THREE.DirectionalLight(0xffffff, 0.9);
 dir.position.set(150, 300, 150); dir.castShadow = true;
 dir.shadow.mapSize.set(2048, 2048);
@@ -263,30 +269,74 @@ const partList=document.getElementById('part-list'),partDetail=document.getEleme
 
 function log(msg,cls){ const d=document.createElement('div'); if(cls)d.className=cls; d.textContent='['+new Date().toLocaleTimeString()+'] '+msg; logBox.appendChild(d); logBox.scrollTop=logBox.scrollHeight; }
 
-let selectedPart=null;
+let selectedPart=null, modelMode=false;
 Object.keys(parts).forEach(id=>{
   const item=document.createElement('div'); item.className='part-item'; item.textContent=id+' '+parts[id].group.userData.name;
   item.onclick=()=>selectPart(id); partList.appendChild(item);
 });
+
+function setEnvironmentVisible(v){ table.visible=v; psu.visible=v; bb.visible=v; dmm.visible=v; }
+
 function selectPart(id){
   selectedPart=id;
   document.querySelectorAll('.part-item').forEach((el,i)=>el.classList.toggle('selected',Object.keys(parts)[i]===id));
   const p=parts[id];
   partDetail.innerHTML='<strong>'+p.group.userData.id+' '+p.group.userData.name+'</strong><br>'+p.group.userData.desc;
+  // Isolate: hide all other parts, show only selected
+  Object.keys(parts).forEach(pid=>{ parts[pid].group.visible = (pid===id); });
+  setEnvironmentVisible(false);
+  // Center camera on selected part
   const box3=new THREE.Box3().setFromObject(p.group);
   const center=box3.getCenter(new THREE.Vector3());
   const size=box3.getSize(new THREE.Vector3());
-  const maxDim=Math.max(size.x,size.y,size.z);
-  const dist=maxDim*3+50;
+  const maxDim=Math.max(size.x,size.y,size.z,10);
+  const dist=maxDim*4+30;
   controls.target.copy(center);
-  camera.position.set(center.x+dist*0.7, center.y+dist*0.5, center.z+dist*0.7);
+  camera.position.set(center.x+dist*0.6, center.y+dist*0.4, center.z+dist*0.7);
+  document.getElementById('btnReturnAssembly').disabled=false;
 }
 
-let explodeTarget=0,explodeCurrent=0;
+function returnAssembly(){
+  selectedPart=null;
+  Object.keys(parts).forEach(pid=>{ parts[pid].group.visible=true; });
+  if(!modelMode) setEnvironmentVisible(true);
+  document.querySelectorAll('.part-item').forEach(el=>el.classList.remove('selected'));
+  partDetail.textContent='点击部件查看独立视图';
+  document.getElementById('btnReturnAssembly').disabled=true;
+  controls.target.set(0,60,0);
+  camera.position.set(450,320,520);
+}
+
+document.getElementById('btnReturnAssembly').onclick=returnAssembly;
+document.getElementById('btnModelMode').onclick=function(){
+  modelMode=!modelMode;
+  this.classList.toggle('primary', modelMode);
+  this.textContent = modelMode ? '教学场景' : '模型查看';
+  if(modelMode){
+    setEnvironmentVisible(false);
+    if(!selectedPart){ controls.target.set(0,100,0); camera.position.set(350,280,400); }
+  } else {
+    if(!selectedPart) setEnvironmentVisible(true);
+  }
+};
+
+let explodeTarget=0,explodeCurrent=0,explodeFitDone=false;
 document.getElementById('explode-slider').oninput=e=>{ explodeTarget=parseFloat(e.target.value); };
 function updateExplode(){
   explodeCurrent+=(explodeTarget-explodeCurrent)*0.1;
-  const dirs={B01:[0,-20,0],B02:[0,15,0],B03:[0,0,30],B04:[0,10,50],B05:[0,-15,50],B06:[0,60,0],B07:[0,100,0],B08:[0,-20,50],B09:[60,0,0],B10:[0,0,-30]};
+  // Different directions per part for clear separation
+  const dirs={
+    B01:[0,0,-50],        // base: backward (not below table)
+    B02:[0,0,0],           // frame: stays (reference)
+    B03:[0,0,80],          // front panel: forward
+    B04:[0,10,110],        // display: forward+up slightly
+    B05:[0,-15,100],       // LED strip: forward+down
+    B06:[0,60,0],          // neck: up
+    B07:[0,120,0],         // head: up
+    B08:[0,-10,90],        // speaker grille: forward+down
+    B09:[90,0,0],          // side covers: right (group has both sides)
+    B10:[0,0,-60]          // compute module: backward
+  };
   Object.keys(parts).forEach(id=>{
     const d=dirs[id]||[0,0,0];
     parts[id].group.position.copy(parts[id].homePos);
@@ -294,6 +344,18 @@ function updateExplode(){
     parts[id].group.position.y+=d[1]*explodeCurrent;
     parts[id].group.position.z+=d[2]*explodeCurrent;
   });
+  // Auto-fit camera to all parts when exploded
+  if(explodeCurrent>0.3 && !explodeFitDone){
+    explodeFitDone=true;
+    const box3=new THREE.Box3().setFromObject(robotGroup);
+    const center=box3.getCenter(new THREE.Vector3());
+    const size=box3.getSize(new THREE.Vector3());
+    const maxDim=Math.max(size.x,size.y,size.z);
+    controls.target.copy(center);
+    const dist=maxDim*2.2+100;
+    camera.position.set(center.x+dist*0.6, center.y+dist*0.5, center.z+dist*0.7);
+  }
+  if(explodeCurrent<0.1) explodeFitDone=false;
 }
 
 function transitionTo(t){
@@ -361,7 +423,10 @@ document.getElementById('btnPrev').onclick=()=>{ const idx=ORDER.indexOf(state.c
 document.getElementById('btnReset').onclick=()=>{
   stopAuto(); state.paused=false;
   Object.assign(state,{teacherPowerOff:false,teacherPartCheck:false,studentReplaced:false,safetyConfirmed:false,teacherTakeover:false,reflectionDone:false,currentRole:"teacher"});
-  logBox.innerHTML=''; transitionTo("S0"); log("已重置。","ok");
+  logBox.innerHTML='';
+  returnAssembly();
+  if(modelMode) document.getElementById('btnModelMode').click();
+  transitionTo("S0"); log("已重置。","ok");
 };
 document.getElementById('btnPause').onclick=()=>{ if(state.auto)stopAuto(); state.paused=true; log("已暂停。","warn"); };
 
