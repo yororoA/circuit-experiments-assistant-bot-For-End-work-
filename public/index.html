@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>基础电路助教机器人 · Three.js 数字原型</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#263238;color:#eceff1;overflow:hidden}
+#app{display:flex;height:100vh}
+#canvas-wrap{flex:1;position:relative;min-width:0}
+#canvas-wrap canvas{display:block}
+#sidebar{width:320px;background:#1e272e;border-left:1px solid #37474f;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sidebar-section{padding:10px;border-bottom:1px solid #37474f}
+.sidebar-section h3{font-size:11px;color:#78909c;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+button{background:#37474f;color:#eceff1;border:1px solid #546e7a;padding:5px 8px;margin:2px;border-radius:4px;cursor:pointer;font-size:11px}
+button:hover{background:#455a64}
+button:disabled{opacity:0.4;cursor:not-allowed}
+button.primary{background:#00838f;border-color:#00838f}
+.btn-row{display:flex;flex-wrap:wrap;gap:3px;margin:3px 0}
+#state-banner{padding:6px 10px;font-weight:600;font-size:12px}
+#state-banner.S0{background:#2e7d32}
+#state-banner.S1{background:#f57f17}
+#state-banner.S2{background:#c62828}
+#state-banner.S3{background:#f57f17}
+#state-banner.S4{background:#1565c0}
+#state-banner.S5{background:#f57f17}
+#state-banner.S6{background:#2e7d32}
+#readout{font-size:11px;line-height:1.6}
+#readout .val{color:#80cbc4;font-family:monospace}
+#log{font-size:10px;line-height:1.5;max-height:120px;overflow-y:auto;background:#0d1117;padding:6px;border-radius:4px}
+#log div{margin-bottom:2px}
+#log .ok{color:#a5d6a7}
+#log .warn{color:#fff59d}
+#log .err{color:#ef9a9a}
+#explode-slider{width:100%}
+#part-list{max-height:160px;overflow-y:auto}
+.part-item{padding:3px 6px;cursor:pointer;font-size:11px;border-radius:3px}
+.part-item:hover{background:#37474f}
+.part-item.selected{background:#00838f}
+#part-detail{font-size:10px;color:#b0bec5;line-height:1.4;margin-top:6px;padding:6px;background:#263238;border-radius:4px}
+#role-group{display:flex;gap:3px}
+#role-group button.active{background:#00838f}
+.tag{display:inline-block;background:#37474f;padding:1px 5px;margin:1px;border-radius:3px;font-size:9px}
+#status-bar{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,0.7);padding:3px 6px;border-radius:4px;font-size:10px;font-family:monospace}
+#tabs{display:flex;border-bottom:1px solid #37474f}
+#tabs button{flex:1;border-radius:0;border:none;background:transparent;border-bottom:2px solid transparent;font-size:10px}
+#tabs button.active{border-bottom-color:#00838f;color:#80cbc4}
+.tab-panel{display:none;padding:8px;font-size:10px;line-height:1.5}
+.tab-panel.active{display:block}
+#webgl-fallback{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ef9a9a;font-size:14px;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="canvas-wrap">
+    <div id="state-banner" class="S0">S0 · 理论示例</div>
+    <div id="status-bar">init</div>
+    <div id="webgl-fallback">WebGL 不可用。本原型需要支持 WebGL 的现代浏览器。<br>（数字演示场景，非真实实验设备）</div>
+  </div>
+  <div id="sidebar">
+    <div class="sidebar-section">
+      <h3>控制</h3>
+      <div class="btn-row">
+        <button id="btnPlay" class="primary">自动演示</button>
+        <button id="btnPause">暂停</button>
+        <button id="btnReset">重置</button>
+        <button id="btnPrev">上一步</button>
+        <button id="btnNext">下一步</button>
+      </div>
+      <div class="btn-row">
+        <button data-view="front">正视</button>
+        <button data-view="iso" class="active">斜俯35°</button>
+        <button data-view="side">侧面</button>
+        <button data-view="top">俯视</button>
+        <button id="btnZoomOut">−</button>
+        <button id="btnZoomIn">+</button>
+      </div>
+      <div style="margin-top:4px;font-size:10px;">爆炸视图 <input type="range" id="explode-slider" min="0" max="1" step="0.01" value="0"></div>
+    </div>
+    <div class="sidebar-section">
+      <h3>角色（演示扮演，非真实鉴权）</h3>
+      <div id="role-group">
+        <button id="roleTeacher" class="active">教师</button>
+        <button id="roleStudent">学生</button>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>读数（内置示例，非实测）</h3>
+      <div id="readout">
+        U2: <span class="val" id="roU2">3.333 V</span><br>
+        I: <span class="val" id="roI">1.667 mA</span><br>
+        偏差: <span class="val" id="roDev">0.0%</span><br>
+        R2: <span class="val" id="roR2">2.0 kΩ</span><br>
+        <span id="roTags"></span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>门禁/权限（手动模式）</h3>
+      <div id="gates"></div>
+    </div>
+    <div class="sidebar-section">
+      <h3>日志（本页内存，重置/关闭清除）</h3>
+      <div id="log"></div>
+    </div>
+    <div class="sidebar-section">
+      <h3>部件列表（B01–B10）</h3>
+      <div id="part-list"></div>
+      <div id="part-detail">点击部件查看独立视图</div>
+    </div>
+    <div class="sidebar-section">
+      <div id="tabs">
+        <button data-tab="t-curriculum" class="active">课程</button>
+        <button data-tab="t-assignment">11项</button>
+        <button data-tab="t-boundary">边界</button>
+      </div>
+      <div class="tab-panel active" id="t-curriculum">
+        <p><strong>课程理解：理论→设计映射</strong></p>
+        <p>• 人 should/being (p6)：教师定目标与价值。</p>
+        <p>• 三元价值秩序 (p52)：教师主导、学生主体。</p>
+        <p>• 具身认知 (p58/p59)：学生动手与环境交互。</p>
+        <p>• 人在回路置信度 (p78/p83)：低置信拒判转教师。</p>
+        <p>• BKT (p149/p156)：规则标签规划，未训练BKT。</p>
+        <p>• 教学闭环 (p161)：实验→观察→反思。</p>
+        <p>• 多源互证 (p187)：拓扑/接口/断电三问。</p>
+        <p>• 师生协同 (p223)：教师保留上电/断电/最终责任。</p>
+        <p>• 可解释五条件 (p225)：证据标签可见。</p>
+        <p>• 验收四问 (p229)：目标/证据/责任/反馈修正。</p>
+      </div>
+      <div class="tab-panel" id="t-assignment">
+        <p>11项作业要求映射见报告正文；本数字原型实现状态机/部件/爆炸视图。</p>
+      </div>
+      <div class="tab-panel" id="t-boundary">
+        <p><strong>已实现：</strong>Three.js WebGL、PBR材质、Orbit拖拽、部件选择/爆炸slider、状态机门禁、头部3D转动。</p>
+        <p><strong>未实现：</strong>真实摄像头/视觉识别、TTS、LLM/RAG/KG、串口/真实仪器、PLC自动切断。</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="./vendor/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+if(!window.THREE){document.getElementById('webgl-fallback').style.display='block';return;}
+
+var STATES={
+  S0:{name:"S0 · 理论示例",cls:"S0",face:"happy",u2:"3.333",i:"1.667",dev:"0.0%",r2:"2.0",led:"green",tags:["理论计算","R1=1kΩ","R2=2kΩ","待测量"],log:"S0：U2=3.333V，I=1.667mA。"},
+  S1:{name:"S1 · 测量异常",cls:"S1",face:"concerned",u2:"2.500",i:"2.500",dev:"-25%",r2:"1.0",led:"yellow",tags:["示例读数2.50V","偏离区间","拓扑正确","元件未知"],log:"S1：U2=2.50V(-25%)，偏离比较区间。"},
+  S2:{name:"S2 · 证据不足拒判",cls:"S2",face:"frown",u2:"2.500",i:"2.500",dev:"-25%",r2:"未知",led:"red",tags:["拓扑预置","元件未知","不能定位","转教师"],log:"S2 拒判：证据不足，停止自动诊断。"},
+  S3:{name:"S3 · 教师核验（演示）",cls:"S3",face:"neutral",u2:"—",i:"—",dev:"—",r2:"1.0(错)",led:"yellow",tags:["模拟断电","核对标称","发现R2=1kΩ"],log:"S3 演示：发现 R2=1kΩ 错件。"},
+  S4:{name:"S4 · 学生更换（演示）",cls:"S4",face:"neutral",u2:"—",i:"—",dev:"—",r2:"更换中",led:"blue",tags:["学生操作","断电换R2","机器人不碰线"],log:"S4 演示：学生断电换 R2=2kΩ。"},
+  S5:{name:"S5 · 待教师安全确认",cls:"S5",face:"neutral",u2:"—",i:"—",dev:"—",r2:"2.0",led:"yellow",tags:["待教师确认","独立门禁"],log:"S5：待教师独立安全确认。"},
+  S6:{name:"S6 · 复测完成待反思",cls:"S6",face:"happy",u2:"3.340",i:"1.670",dev:"+0.2%",r2:"2.0",led:"green",tags:["复测3.34V","+0.2%","待反思","本页记录"],log:"S6：复测 3.34V(+0.2%)，待学生反思。"}
+};
+var ORDER=["S0","S1","S2","S3","S4","S5","S6"];
+var state={current:"S0",auto:false,paused:false,teacherPowerOff:false,teacherPartCheck:false,studentReplaced:false,safetyConfirmed:false,teacherTakeover:false,reflectionDone:false,currentRole:"teacher"};
+
+var wrap=document.getElementById('canvas-wrap');
+var scene=new THREE.Scene();
+scene.background=new THREE.Color(0x263238);
+var camW=wrap.clientWidth||(window.innerWidth-320);
+var camH=wrap.clientHeight||window.innerHeight;
+var camera=new THREE.PerspectiveCamera(45,camW/camH,0.1,2000);
+camera.position.set(200,160,260);
+var renderer;
+try{renderer=new THREE.WebGLRenderer({antialias:true});}
+catch(e){document.getElementById('webgl-fallback').style.display='block';return;}
+renderer.setSize(camW,camH);
+renderer.shadowMap.enabled=true;
+wrap.appendChild(renderer.domElement);
+
+var theta=Math.atan2(camera.position.x,camera.position.z);
+var phi=Math.acos(camera.position.y/camera.position.length());
+var radius=camera.position.length();
+var target=new THREE.Vector3(0,40,0);
+function updateCamera(){
+  camera.position.x=target.x+radius*Math.sin(phi)*Math.sin(theta);
+  camera.position.y=target.y+radius*Math.cos(phi);
+  camera.position.z=target.z+radius*Math.sin(phi)*Math.cos(theta);
+  camera.lookAt(target);
+}
+updateCamera();
+var dragging=false,lastX=0,lastY=0;
+renderer.domElement.addEventListener('mousedown',function(e){dragging=true;lastX=e.clientX;lastY=e.clientY;});
+window.addEventListener('mouseup',function(){dragging=false;});
+window.addEventListener('mousemove',function(e){
+  if(!dragging)return;
+  theta-=(e.clientX-lastX)*0.005;
+  phi-=(e.clientY-lastY)*0.005;
+  phi=Math.max(0.1,Math.min(Math.PI/2-0.05,phi));
+  lastX=e.clientX;lastY=e.clientY;
+  updateCamera();
+});
+renderer.domElement.addEventListener('wheel',function(e){
+  e.preventDefault();
+  radius*=(e.deltaY>0?1.1:0.9);
+  radius=Math.max(80,Math.min(600,radius));
+  updateCamera();
+},{passive:false});
+
+scene.add(new THREE.AmbientLight(0xffffff,0.5));
+var dir=new THREE.DirectionalLight(0xffffff,0.9);
+dir.position.set(100,200,100);
+dir.castShadow=true;
+scene.add(dir);
+var fill=new THREE.DirectionalLight(0x80cbc4,0.3);
+fill.position.set(-100,50,-100);
+scene.add(fill);
+
+function mat(c,r,m){return new THREE.MeshStandardMaterial({color:c,roughness:r||0.6,metalness:m||0.1});}
+function box(w,h,d,m,x,y,z){
+  var mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+  mesh.position.set(x||0,y||0,z||0);
+  mesh.castShadow=true;mesh.receiveShadow=true;
+  return mesh;
+}
+var parts={};
+var robotGroup=new THREE.Group();
+scene.add(robotGroup);
+
+function addPart(id,name,desc,group){
+  group.userData={id:id,name:name,desc:desc};
+  robotGroup.add(group);
+  parts[id]={group:group,homePos:group.position.clone()};
+}
+
+var b01=new THREE.Group();b01.add(box(220,25,180,mat(0x37474f,0.8,0.2),0,12.5,0));addPart("B01","桌面底座","整机承载",b01);
+var b02=new THREE.Group();b02.add(box(200,180,160,mat(0xeceff1,0.7,0.05),0,115,0));addPart("B02","外壳框架","主体结构",b02);
+var b03=new THREE.Group();b03.add(box(190,170,12,mat(0xffffff,0.5,0.05),0,115,86));addPart("B03","前面板","嵌入显示",b03);
+var b04=new THREE.Group();b04.add(box(150,90,8,mat(0x1565c0,0.3,0.1),0,130,93));addPart("B04","显示模块","LCD状态显示",b04);
+var b05=new THREE.Group();var ledMesh=box(160,12,8,mat(0x00838f,0.3,0.1),0,60,93);b05.add(ledMesh);addPart("B05","状态灯条","LED绿/黄/红",b05);
+var b06=new THREE.Group();b06.add(box(40,60,40,mat(0x455a64,0.6,0.3),0,235,0));addPart("B06","颈部支架","连接外壳与头舱",b06);
+var b07=new THREE.Group();b07.add(box(70,50,60,mat(0x00838f,0.4,0.2),0,285,0));
+var lens=new THREE.Mesh(new THREE.CylinderGeometry(8,8,5,16),mat(0x212121,0.2,0.8));
+lens.rotation.x=Math.PI/2;lens.position.set(0,285,32);b07.add(lens);
+addPart("B07","摄像头头舱","数字模型(未接视觉)",b07);
+var b08=new THREE.Group();b08.add(box(180,30,10,mat(0x263238,0.8,0.1),0,90,93));addPart("B08","双喇叭格栅","TTS未接入",b08);
+var b09=new THREE.Group();b09.add(box(10,160,140,mat(0xb0bec5,0.7,0.1),105,115,0));b09.add(box(10,160,140,mat(0xb0bec5,0.7,0.1),-105,115,0));addPart("B09","侧盖","左右散热孔",b09);
+var b10=new THREE.Group();b10.add(box(140,30,120,mat(0x263238,0.5,0.3),0,115,0));addPart("B10","计算模块","演示计算板",b10);
+robotGroup.position.set(80,0,0);
+
+var table=new THREE.Group();table.add(box(1200,10,800,mat(0x5d4037,0.8,0.05),0,-5,0));scene.add(table);
+var psu=new THREE.Group();psu.add(box(160,80,200,mat(0x455a64,0.6,0.2),0,40,0));psu.position.set(-200,0,-50);scene.add(psu);
+var bb=new THREE.Group();bb.add(box(170,10,55,mat(0xffffff,0.5,0.02),0,5,0));
+var r1=new THREE.Mesh(new THREE.CylinderGeometry(4,4,30,12),mat(0x8d6e63,0.5,0.3));
+r1.rotation.z=Math.PI/2;r1.position.set(-30,12,0);r1.castShadow=true;bb.add(r1);
+var r2=new THREE.Mesh(new THREE.CylinderGeometry(4,4,30,12),mat(0x8d6e63,0.5,0.3));
+r2.rotation.z=Math.PI/2;r2.position.set(30,12,0);r2.castShadow=true;bb.add(r2);
+bb.position.set(-50,0,30);scene.add(bb);
+var dmm=new THREE.Group();dmm.add(box(120,60,40,mat(0x263238,0.6,0.2),0,30,0));dmm.position.set(-180,0,100);scene.add(dmm);
+
+var banner=document.getElementById('state-banner');
+var roU2=document.getElementById('roU2'),roI=document.getElementById('roI');
+var roDev=document.getElementById('roDev'),roR2=document.getElementById('roR2');
+var roTags=document.getElementById('roTags');
+var logBox=document.getElementById('log');
+var gatesEl=document.getElementById('gates');
+var statusBar=document.getElementById('status-bar');
+var partList=document.getElementById('part-list');
+var partDetail=document.getElementById('part-detail');
+
+function log(msg,cls){
+  var d=document.createElement('div');
+  if(cls)d.className=cls;
+  d.textContent='['+new Date().toLocaleTimeString()+'] '+msg;
+  logBox.appendChild(d);logBox.scrollTop=logBox.scrollHeight;
+}
+
+var selectedPart=null;
+Object.keys(parts).forEach(function(id){
+  var p=parts[id];
+  var item=document.createElement('div');
+  item.className='part-item';item.textContent=id+' '+p.group.userData.name;
+  item.onclick=function(){selectPart(id);};
+  partList.appendChild(item);
+});
+function selectPart(id){
+  selectedPart=id;
+  document.querySelectorAll('.part-item').forEach(function(el,i){el.classList.toggle('selected',Object.keys(parts)[i]===id);});
+  var p=parts[id];
+  partDetail.innerHTML='<strong>'+p.group.userData.id+' '+p.group.userData.name+'</strong><br>'+p.group.userData.desc;
+}
+
+var explodeTarget=0,explodeCurrent=0;
+document.getElementById('explode-slider').oninput=function(e){explodeTarget=parseFloat(e.target.value);};
+function updateExplode(){
+  explodeCurrent+=(explodeTarget-explodeCurrent)*0.1;
+  var dirs={B01:[0,-20,0],B02:[0,15,0],B03:[0,0,30],B04:[0,10,40],B05:[0,-15,40],B06:[0,50,0],B07:[0,80,0],B08:[0,-20,40],B09:[50,0,0],B10:[0,0,-20]};
+  Object.keys(parts).forEach(function(id){
+    var d=dirs[id]||[0,0,0];
+    parts[id].group.position.copy(parts[id].homePos);
+    parts[id].group.position.x+=d[0]*explodeCurrent;
+    parts[id].group.position.y+=d[1]*explodeCurrent;
+    parts[id].group.position.z+=d[2]*explodeCurrent;
+  });
+}
+
+function transitionTo(t){
+  var tgtIdx=ORDER.indexOf(t);
+  if(tgtIdx<=ORDER.indexOf("S3")){
+    state.studentReplaced=false;state.safetyConfirmed=false;state.reflectionDone=false;
+    state.teacherTakeover=false;state.teacherPowerOff=false;state.teacherPartCheck=false;
+  }
+  if(t==="S4"){state.safetyConfirmed=false;state.reflectionDone=false;}
+  if(t==="S5"){state.reflectionDone=false;}
+  state.current=t;renderState();
+  var s=STATES[t];
+  log(s.log,s.cls==="S2"?"err":(s.cls==="S1"||s.cls==="S3"||s.cls==="S5")?"warn":"ok");
+}
+
+function renderState(){
+  var s=STATES[state.current];
+  banner.textContent=s.name;banner.className=s.cls;
+  roU2.textContent=s.u2==="—"?"—":s.u2+" V";
+  roI.textContent=s.i==="—"?"—":s.i+" mA";
+  roDev.textContent=s.dev;
+  roR2.textContent=s.r2+(s.r2.indexOf("k")>=0||s.r2==="—"?"":" kΩ");
+  roTags.innerHTML=s.tags.map(function(t){return '<span class="tag">'+t+'</span>';}).join('');
+  var lc={green:0x2e7d32,yellow:0xf57f17,red:0xc62828,blue:0x1565c0};
+  ledMesh.material.color.setHex(lc[s.led]||0x00838f);
+  var ht={frown:{y:-0.3,t:0.15},concerned:{y:0.2,t:0.1},neutral:{y:0,t:0.2},happy:{y:0.15,t:-0.05}};
+  headTargetYaw=ht[s.face].y;headTargetTilt=ht[s.face].t;
+  updateGates();updateStatus();
+}
+
+function updateGates(){
+  var st=state.current,role=state.currentRole;
+  var h='';
+  h+='<label style="display:block;font-size:10px;margin:2px 0;"><input type="checkbox" id="chkPowerOff" '+(state.teacherPowerOff?'checked':'')+' '+(st!=="S3"||role!=="teacher"?'disabled':'')+'> 教师：已指导断电(演示)</label>';
+  h+='<label style="display:block;font-size:10px;margin:2px 0;"><input type="checkbox" id="chkPartCheck" '+(state.teacherPartCheck?'checked':'')+' '+(st!=="S3"||role!=="teacher"?'disabled':'')+'> 教师：已核对元件(演示)</label>';
+  h+='<div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap;">';
+  h+='<button id="btnTakeover" '+(!(st==="S2"&&role==="teacher"&&!state.teacherTakeover)?'disabled':'')+'>教师接管(模拟)</button>';
+  h+='<button id="btnTeacherDone" '+(!(st==="S3"&&role==="teacher"&&state.teacherPowerOff&&state.teacherPartCheck)?'disabled':'')+'>核验完成</button>';
+  h+='<button id="btnStudentReplace" '+(!(st==="S4"&&role==="student")?'disabled':'')+'>学生更换R2</button>';
+  h+='<button id="btnSafetyConfirm" '+(!(st==="S5"&&role==="teacher"&&!state.safetyConfirmed)?'disabled':'')+'>安全确认</button>';
+  h+='</div>';
+  gatesEl.innerHTML=h;
+  var cp=document.getElementById('chkPowerOff'),cc=document.getElementById('chkPartCheck');
+  if(cp)cp.onchange=function(){state.teacherPowerOff=cp.checked;updateGates();};
+  if(cc)cc.onchange=function(){state.teacherPartCheck=cc.checked;updateGates();};
+  var bt=document.getElementById('btnTakeover');if(bt)bt.onclick=function(){state.teacherTakeover=true;log('[教师] 已接管。','ok');updateGates();};
+  var btd=document.getElementById('btnTeacherDone');if(btd)btd.onclick=function(){log('[教师] 核验完成，发现R2=1kΩ。','ok');transitionTo("S4");};
+  var bsr=document.getElementById('btnStudentReplace');if(bsr)bsr.onclick=function(){state.studentReplaced=true;log('[学生] 已更换R2=2kΩ。','ok');updateGates();};
+  var bsc=document.getElementById('btnSafetyConfirm');if(bsc)bsc.onclick=function(){state.safetyConfirmed=true;log('[教师] 安全确认，允许复测。','ok');updateGates();};
+}
+
+function updateStatus(){
+  statusBar.textContent=state.current+' | dist '+Math.round(radius)+' | head yaw '+headYaw.toFixed(2);
+}
+
+var headYaw=0,headTilt=0,headTargetYaw=0,headTargetTilt=0,headElapsed=0,headAnimating=false;
+
+document.getElementById('btnNext').onclick=function(){
+  var idx=ORDER.indexOf(state.current);if(idx>=ORDER.length-1)return;
+  var next=ORDER[idx+1];
+  if(state.current==="S2"&&next==="S3"&&!state.teacherTakeover){log("门禁：教师须先接管。","err");return;}
+  if(state.current==="S3"&&next==="S4"&&!(state.teacherPowerOff&&state.teacherPartCheck)){log("门禁：教师须勾选两项。","err");return;}
+  if(state.current==="S4"&&next==="S5"&&!state.studentReplaced){log("门禁：学生须先更换。","err");return;}
+  if(state.current==="S5"&&next==="S6"&&!state.safetyConfirmed){log("门禁：须教师安全确认。","err");return;}
+  transitionTo(next);
+};
+document.getElementById('btnPrev').onclick=function(){var idx=ORDER.indexOf(state.current);if(idx>0)transitionTo(ORDER[idx-1]);};
+document.getElementById('btnReset').onclick=function(){
+  stopAuto();state.paused=false;
+  state.teacherPowerOff=false;state.teacherPartCheck=false;
+  state.studentReplaced=false;state.safetyConfirmed=false;
+  state.teacherTakeover=false;state.reflectionDone=false;state.currentRole="teacher";
+  logBox.innerHTML='';transitionTo("S0");log("已重置。","ok");
+};
+document.getElementById('btnPause').onclick=function(){if(state.auto)stopAuto();state.paused=true;log("已暂停。","warn");};
+
+var autoTimer=null;
+function startAuto(){state.auto=true;state.paused=false;log("自动演示开始。","warn");autoTimer=setInterval(autoStep,2500);}
+function stopAuto(){state.auto=false;if(autoTimer){clearInterval(autoTimer);autoTimer=null;}}
+function autoStep(){
+  var idx=ORDER.indexOf(state.current);
+  if(idx>=ORDER.length-1){
+    if(!state.reflectionDone){state.currentRole="student";state.reflectionDone=true;log("[自动扮演] 学生示例反思。本页记录。","warn");renderState();}
+    stopAuto();log("自动演示完成。","ok");return;
+  }
+  var next=ORDER[idx+1];
+  if(state.current==="S2"&&next==="S3"){state.currentRole="teacher";state.teacherTakeover=true;log("[自动扮演] 教师接管。","warn");}
+  if(next==="S4"){state.teacherPowerOff=true;state.teacherPartCheck=true;log("[自动扮演] 教师勾选两项。","warn");}
+  if(next==="S5"){state.currentRole="student";state.studentReplaced=true;log("[自动扮演] 学生更换R2。","warn");}
+  if(next==="S6"){state.currentRole="teacher";state.safetyConfirmed=true;log("[自动扮演] 教师安全确认。","warn");}
+  transitionTo(next);
+}
+document.getElementById('btnPlay').onclick=function(){
+  if(state.paused){state.paused=false;if(state.auto)autoTimer=setInterval(autoStep,2500);}
+  else{if(state.current!=="S0")document.getElementById('btnReset').onclick();startAuto();}
+};
+
+document.querySelectorAll('[data-view]').forEach(function(btn){
+  btn.onclick=function(){
+    var v=btn.dataset.view;
+    var views={front:{t:[0,60,0],r:[0,100,280]},iso:{t:[0,40,0],r:[200,160,260]},side:{t:[0,60,0],r:[280,80,0]},top:{t:[0,0,0],r:[0,280,0.1]}};
+    if(views[v]){
+      target.set(views[v].t[0],views[v].t[1],views[v].t[2]);
+      radius=Math.sqrt(views[v].r[0]*views[v].r[0]+views[v].r[1]*views[v].r[1]+views[v].r[2]*views[v].r[2]);
+      theta=Math.atan2(views[v].r[0],views[v].r[2]);
+      phi=Math.acos(views[v].r[1]/radius);
+      updateCamera();
+    }
+  };
+});
+document.getElementById('btnZoomIn').onclick=function(){radius*=0.85;updateCamera();};
+document.getElementById('btnZoomOut').onclick=function(){radius*=1.15;updateCamera();};
+
+document.getElementById('roleTeacher').onclick=function(){
+  state.currentRole="teacher";this.classList.add('active');
+  document.getElementById('roleStudent').classList.remove('active');updateGates();
+};
+document.getElementById('roleStudent').onclick=function(){
+  state.currentRole="student";this.classList.add('active');
+  document.getElementById('roleTeacher').classList.remove('active');updateGates();
+};
+
+document.querySelectorAll('#tabs button').forEach(function(btn){
+  btn.onclick=function(){
+    document.querySelectorAll('#tabs button').forEach(function(b){b.classList.remove('active');});
+    document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  };
+});
+
+window.demo={
+  getState:function(){return Object.assign({},state);},
+  getSnapshot:function(){return{state:state.current,head:{yaw:headYaw,tilt:headTilt}};},
+  reset:function(){document.getElementById('btnReset').onclick();}
+};
+
+var lastTime=performance.now();
+function animate(){
+  requestAnimationFrame(animate);
+  var now=performance.now();var dt=now-lastTime;lastTime=now;
+  if(!state.paused){
+    if(headAnimating){
+      headElapsed+=dt;
+      var t=Math.min(1,headElapsed/800);
+      var e=t<0.5?2*t*t:-1+(4-2*t)*t;
+      headYaw=headTargetYaw*e;headTilt=headTargetTilt*e;
+      if(t>=1)headAnimating=false;
+    }
+    b07.rotation.y=headYaw;b07.rotation.x=headTilt;
+    updateExplode();
+  }
+  renderer.render(scene,camera);
+}
+
+renderState();
+log("原型加载完成：S0 理论示例。","ok");
+animate();
+
+window.addEventListener('resize',function(){
+  camera.aspect=wrap.clientWidth/wrap.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(wrap.clientWidth,wrap.clientHeight);
+});
+})();
+</script>
+</body>
+</html>
