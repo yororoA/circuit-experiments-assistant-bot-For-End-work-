@@ -40,7 +40,8 @@ export function createLab({ scenario, role = 'student' } = {}) {
   if (!['teacher', 'student'].includes(role)) throw new Error('createLab: role must be teacher|student');
 
   const mode = scenario.mode;                    // 'exploration' | 'blind'
-  const initialActual = clone(scenario.actual);  // 深拷贝，防 fixtures 外部 mutation
+  const base = clone(scenario);                  // 全量深拷贝：setup/candidates 不受外部 mutation
+  const initialActual = clone(base.actual);      // 电路初始态深拷贝
   let actual = clone(initialActual);
 
   const fresh = () => ({
@@ -63,23 +64,30 @@ export function createLab({ scenario, role = 'student' } = {}) {
   const canPredict = () => st.phase === 'predict';
   const canSetProbes = () => st.phase === 'exploration';
   const canMeasure = () => st.phase === 'exploration' && st.probes;
-  const canSetConfig = () => mode === 'exploration';
+  const canSetConfig = () => mode === 'exploration'
+    && role === 'student'
+    && (st.phase === 'predict' || st.phase === 'exploration');
   const canRequestReview = () => role === 'student' && st.phase === 'exploration';
   const canApprove = () => role === 'teacher' && st.reviewRequested && !st.correctionApproved;
   const canApplyCorrection = () => role === 'student' && st.correctionApproved;  // 批准每次消费；不收敛可再走复核
   // 标称 setup 的 U_NG 允许带（blind 收敛判据：复测点须落回带内才算修好）
   const nominalNGBand = () => {
-    const s = scenario.setup;
+    const s = base.setup;
     return {
       lo: s.E * (s.R2 * 0.95) / (s.R1 * 1.05 + s.R2 * 0.95),
       hi: s.E * (s.R2 * 1.05) / (s.R1 * 0.95 + s.R2 * 1.05),
     };
   };
   const canReflect = () => {
+    if (role !== 'student') return false;                       // 教师不能代学生完成反思
     if (st.phase !== 'exploration' || !st.prediction || !hasUsable()) return false;
-    if (mode === 'exploration') return true;      // 自由探索：预测 + 可用测量 + 学生自反思
-    if (!st.correctionApplied) return false;      // blind：必须已执行校正
-    return st.evidence.some((e) => e.usable && covers(nominalNGBand(), e.value)); // 复测落回标称 ±5% 带
+    if (mode === 'exploration') return true;                    // 自由探索：学生自反思
+    if (!st.correctionApplied) return false;
+    const band = nominalNGBand();
+    // blind 收敛硬判：必须有 usable DC 的 N-G（无序）证据，signed 取绝对值归一，且落回标称 ±5% 带
+    return st.evidence.some((e) => e.usable && e.mode === 'DC'
+      && ((e.a === 'N' && e.b === 'G') || (e.a === 'G' && e.b === 'N'))
+      && covers(band, Math.abs(e.value)));
   };
   const permittedActions = () => {
     const p = [];
@@ -109,7 +117,7 @@ export function createLab({ scenario, role = 'student' } = {}) {
   };
 
   // ---------- 候选推导（只看已获取证据 + 候选自带 topology，不读 hidden actual topology 做判断） ----------
-  const deriveCandidates = () => scenario.candidates.map((cand) => {
+  const deriveCandidates = () => base.candidates.map((cand) => {
     let status = 'open';
     let why = null;
     for (const ev of st.evidence) {
@@ -134,7 +142,7 @@ export function createLab({ scenario, role = 'student' } = {}) {
     if (st.hintLevel === 2) {
       for (const [a, b] of [['P', 'G'], ['P', 'N'], ['N', 'G']]) {
         const preds = open.map((c) => {
-          const cand = scenario.candidates.find((x) => x.id === c.id);
+          const cand = base.candidates.find((x) => x.id === c.id);
           return { desc: c.desc, iv: predInterval(a, b, cand) };
         });
         const disjoint = preds.length >= 2 && preds.every((p1, i) =>
@@ -157,7 +165,7 @@ export function createLab({ scenario, role = 'student' } = {}) {
       ? { submitted: true, value: st.prediction.u2, unit: UNITS.voltage }
       : { submitted: false, value: null, unit: UNITS.voltage },
     probes: st.probes,
-    config: mode === 'exploration' ? { ...actual } : { ...scenario.setup },
+    config: mode === 'exploration' ? { ...actual } : { ...base.setup },
     derived: (mode === 'exploration' || st.correctionApplied)
       ? { I_mA: actual.E / (actual.R1 + actual.R2) * 1000 }
       : null,
@@ -281,11 +289,12 @@ export function createLab({ scenario, role = 'student' } = {}) {
     },
 
     reflect({ text } = {}) {
+      if (role !== 'student') return bad('forbidden_student', '只有学生能提交反思（教师不能代做）');
       if (st.phase !== 'exploration' || !st.prediction || !hasUsable()) {
         return bad('wrong_phase', '须处于探索阶段、已提交预测且有有效测量才能反思');
       }
       if (mode === 'blind' && !canReflect()) {
-        return bad('not_converged', '复测点未落回标称 ±5% 带内，校正未收敛；可重新补测 U_PG 再申请复核');
+        return bad('not_converged', '须有 N-G 有效 DC 复测且落回标称 ±5% 带；可重新补测 U_NG 再试');
       }
       if (!canReflect()) return bad('wrong_phase', '暂不满足反思条件');
       if (typeof text !== 'string' || text.trim().length < 5) return bad('reflection_too_short', '反思须 ≥5 字');

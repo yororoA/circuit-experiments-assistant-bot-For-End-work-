@@ -1,19 +1,19 @@
 {
   "$comment": "V2 单电源串联分压教学模拟 —— 权威接口合同（source of truth）。读数为确定方程精确点；±5% 仅候选允许带。faultGroundTruth 仅 fixtures，不进 snapshot。",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "module": "./lab-engine.js",
   "api": {
     "createLab": { "args": [{ "scenario": "object", "role": "'teacher'|'student'" }], "returns": "lab" },
     "setRole": { "args": [{ "role": "'teacher'|'student'" }], "note": "UI 教师台/学生台切换；无后端鉴权，仅 role 门禁" },
     "predict": { "args": [{ "u2": "number 0..12 V" }], "gate": "phase='predict'" },
     "setProbes": { "args": [{ "a": "'P'|'N'|'G'", "b": "'P'|'N'|'G'", "mode": "'DC'|'AC'=DC" }], "gate": "phase='exploration'" },
-    "setConfiguration": { "args": [{ "E?": "0..12V", "R1?": ">0Ω", "R2?": ">0Ω", "topology?": "'series'|'shortedR2'" }], "gate": "mode='exploration'；blind 禁用。改电路即作废证据/预测/审批，回 phase='predict'" },
+    "setConfiguration": { "args": [{ "E?": "0..12V", "R1?": ">0Ω", "R2?": ">0Ω", "topology?": "'series'|'shortedR2'" }], "gate": "exploration 模式 + role=student + phase∈{predict,exploration}；blind/closed/review 拒绝。改电路即作废证据/预测/审批，回 phase='predict'" },
     "measure": { "args": [], "gate": "phase='exploration' 且 probes 已设；输出精确点；预测前/复审/关闭态一律 wrong_phase" },
     "requestHint": { "args": [], "levels": "1 还缺什么 → 2 哪次测量能区分 → 3 教师解释；不点 groundTruth" },
     "requestTeacherReview": { "args": [], "gate": "role=student 且 ≥2 条 usable DC 证据覆盖 U_NG+U_PG" },
     "approveCorrection": { "args": [], "gate": "role=teacher 且 reviewRequested 且证据复核通过" },
     "applyCorrection": { "args": [{ "E?": "0..12V", "R1?": ">0Ω", "R2?": ">0Ω" }], "gate": "role=student 且已批准；学生主动输数值，输错得错读数，不自动填 fix；执行后证据/预测/审批作废" },
-    "reflect": { "args": [{ "text": "string ≥5 chars" }], "gate": "exploration 且已预测且有 usable 测量；blind 另须 correctionApplied 且复测点落回标称 setup U_NG ±5% 带（否则 not_converged，实验继续）；自由探索由学生自反思，非教师代做" },
+    "reflect": { "args": [{ "text": "string ≥5 chars" }], "gate": "role=student + exploration + 已预测 + 有 usable 测量；blind 另须 correctionApplied 且存在 usable DC 的 N-G（无序）证据，|value| 落回标称 setup U_NG ±5% 带（否则 not_converged，实验继续）；教师代做 forbidden_student" },
     "reset": { "args": [], "effect": "复原初始电路 actual + 清预测/探针/证据/审批/反思/日志" }
   },
   "actionReturn": "{ ok:boolean, error?:{code,message}, snapshot }",

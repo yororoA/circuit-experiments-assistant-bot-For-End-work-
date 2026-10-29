@@ -57,18 +57,19 @@ engine 输出必须包含以下字段，页面与报告只消费这些字段，�
 - V2 模型：来自 RUlO agent artifact，复制到 `public/v2/models/`
 - V2 vendor：复用 `public/vendor/three.module.min.js`（r160）
 
-## V2.2 engine 实际接口（以 `public/v2/lab/lab-contract.json` 为权威）
+## V2.2.1 engine 实际接口（以 `public/v2/lab/lab-contract.json` 为权威）
 
-本契约的字段表是高层产品视角；engine 实际 snapshot/API 以 `public/v2/lab/lab-contract.json`（v2.2.0）为准。关键差异/补充：
+本契约的字段表是高层产品视角；engine 实际 snapshot/API 以 `public/v2/lab/lab-contract.json`（v2.2.1）为准。关键差异/补充：
 
 - 单位：电压 V、电流 **mA**、电阻 Ω。
 - 读数为电路方程**精确点**；R1/R2 ±5% 仅作用于候选假设的理论允许带，不冒充仪表精度。
 - snapshot 含 `phase`（predict/exploration/reviewRequested/closed）、`mode`（exploration/blind）、`prediction`、`probes`、`config`、`derived.I_mA`、`visibleEvidence[]`、`lastMeasurement`、`candidates[]`（带 open/excluded）、`hint`、`permittedActions`。
-- 电路变更/校正后旧证据/预测/审批自动 `invalidated`（v2.2 新增），不与旧证据复用。
+- 电路变更/校正后旧证据/预测/审批自动 `invalidated`，不与旧证据复用。
 - blind 模式下 `fixtureView=null`、`derived=null`，不泄露 hidden actual。
-- 反思门：phase=exploration 且存在 usable 测量且已收敛到正确候选；教师角色不能 reflect。
+- 反思门（v2.2.1 收紧）：phase=exploration、**role=student**、存在 usable 测量、且已收敛到正确候选（blind 下必须是 N-G 或 G-N 归一后的 NG 精确点；PG 落带不算收敛）。教师角色任何时候不能 reflect。
+- 反向探针 G-N 读数取绝对值归一，-3.333 与 +3.333 等价。
 - reset：复原初始电路 actual 并清预测/探针/证据/审批/反思/日志。
-- 测试：`node public/v2/lab/tests/run-tests.mjs` → 19/19 PASS；独立 Ru22 复核 5 个 focused gate（未 correct 拒反思、错校正复测拒、正确校正收敛 closed、教师不能 reflect、reset 复原）通过。
+- 测试：`node public/v2/lab/tests/run-tests.mjs` → 22/22 PASS；独立 Ru22 复核 4 个 focused gate（T1 教师反思 forbidden / T2 free NG 后教师反思 forbidden / T3 blind PG 落带非 NG not_converged / T4 反向 GN -3.333 closed）通过。
 
 ## Commit 阶段
 

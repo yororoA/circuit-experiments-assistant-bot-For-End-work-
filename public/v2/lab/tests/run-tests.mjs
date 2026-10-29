@@ -290,6 +290,51 @@ test('G2 短接 R2 拓扑：实测 0 排除串联候选，闭合短接候选', (
   assert.deepEqual(openIds(r.snapshot), ['H_shortedR2']);
 });
 
+// ---------- H. v2.2.1 P0 聚焦：role 门禁 / NG 节点硬判 / 反向归一 ----------
+test('H1 教师不能代学生 reflect（即使已有探索测量）', () => {
+  const lab = createLab({ scenario: SCENARIOS['divider-normal'], role: 'teacher' });
+  lab.predict({ u2: 3.3 });
+  lab.setProbes({ a: 'N', b: 'G' }); lab.measure();
+  assert.equal(lab.getSnapshot().phase, 'exploration', '确认处于探索态而非闭锁');
+  assert.equal(lab.reflect({ text: '我代学生总结' }).error.code, 'forbidden_student');
+});
+
+test('H2 blind：PG=3.333 落标称带但不是 N-G，必须 not_converged', () => {
+  const lab = createLab({ scenario: SCENARIOS['divider-ambiguity-wrongR2'], role: 'student' });
+  lab.predict({ u2: 2.5 });
+  lab.setProbes({ a: 'N', b: 'G' }); lab.measure();
+  lab.setProbes({ a: 'P', b: 'G' }); lab.measure();
+  lab.requestTeacherReview();
+  lab.setRole({ role: 'teacher' }); lab.approveCorrection();
+  lab.setRole({ role: 'student' });
+  // 学生错选：把 E 改成 3.333（PG=3.333 恰好落标称带，但 NG 变成 1.666）
+  lab.applyCorrection({ E: 3.333 });
+  lab.predict({ u2: 1.66 });
+  lab.setProbes({ a: 'N', b: 'G' }); lab.measure();
+  lab.setProbes({ a: 'P', b: 'G' }); lab.measure();
+  assert(approx(lab.getSnapshot().lastMeasurement.value, 3.333)); // PG 在带内
+  const r = lab.reflect({ text: '看起来好了' });
+  assert.equal(r.error.code, 'not_converged', `PG 落带但非 NG 不能 finish: ${r.error && r.error.code}`);
+});
+
+test('H3 反向 G-N 读数取绝对值归一：修好后 -3.333 也能完成反思', () => {
+  const lab = createLab({ scenario: SCENARIOS['divider-ambiguity-wrongR2'], role: 'student' });
+  lab.predict({ u2: 2.5 });
+  lab.setProbes({ a: 'N', b: 'G' }); lab.measure();
+  lab.setProbes({ a: 'P', b: 'G' }); lab.measure();
+  lab.requestTeacherReview();
+  lab.setRole({ role: 'teacher' }); lab.approveCorrection();
+  lab.setRole({ role: 'student' });
+  lab.applyCorrection({ R2: 2000 });
+  lab.predict({ u2: 3.33 });
+  lab.setProbes({ a: 'G', b: 'N' });   // 反向探针
+  const m = lab.measure();
+  assert(approx(m.snapshot.lastMeasurement.value, -3.3333333), `反向读数=${m.snapshot.lastMeasurement.value}`);
+  const r = lab.reflect({ text: 'G-N=-3.33V 取绝对值后落回标称带' });
+  assert.equal(r.ok, true);
+  assert.equal(r.snapshot.phase, 'closed');
+});
+
 // ---------- runner ----------
 for (const [name, fn] of cases) {
   try { fn(); pass++; console.log(`PASS  ${name}`); }
