@@ -29,9 +29,10 @@
     {
       "id": "B02",
       "name": "外壳框架",
-      "dimensions_mm": {"w": 200, "h": 180, "d": 160},
+      "nominal_dimensions_mm": {"w": 200, "h": 180, "d": 160},
+      "actual_bbox_mm": {"w": 200, "h": 188, "d": 160},
       "color": "#eceff1",
-      "function": "主体结构",
+      "function": "中空框架（5壁：左右8mm厚+顶底板+背板，前后开口）",
       "mechanical_connects": ["B01", "B03", "B06", "B09", "B10"],
       "electrical_to": [],
       "glb_file": "models/B02.glb"
@@ -80,9 +81,10 @@
     {
       "id": "B07",
       "name": "摄像头头舱",
-      "dimensions_mm": {"w": 70, "h": 50, "d": 60},
+      "nominal_dimensions_mm": {"w": 70, "h": 50, "d": 60},
+      "actual_bbox_mm": {"w": 70, "h": 50, "d": 65},
       "color": "#00838f",
-      "function": "数字模型头舱（未接真实视觉），可小幅转动/点头",
+      "function": "数字模型头舱（含镜头突出5mm，绕颈部连接点转动）",
       "mechanical_connects": ["B06"],
       "electrical_to": ["B10"],
       "glb_file": "models/B07.glb"
