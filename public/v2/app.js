@@ -629,3 +629,19 @@ buildPartsList();
 bindEvents();
 buildLab();
 mountScene();
+
+// ===== 只读诊断（供 Ru22 精确点击核验；不暴露 lab 可改状态 / groundTruth） =====
+export function getSceneDiagnostics() {
+  if (!state.scene) return null;
+  const diag = state.scene.getDiagnostics ? state.scene.getDiagnostics() : {};
+  const rect = el.sceneContainer.getBoundingClientRect();
+  return {
+    container: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
+    paused: state.paused,
+    mode: state.mode,
+    ...diag,
+  };
+}
+if (typeof window !== 'undefined') {
+  window.CircuitBridgeReadOnly = { getSceneDiagnostics };
+}
