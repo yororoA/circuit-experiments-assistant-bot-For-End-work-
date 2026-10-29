@@ -1,0 +1,32 @@
+# === Course / homework materials (never public) ===
+*.pdf
+*.docx
+*.doc
+*.jpg
+*.jpeg
+*.png
+!public/*.png
+!docs/*.png
+!docs/*.jpg
+
+# === Local working dirs (outside this repo) ===
+_shots/
+备份/
+.tmp-tool-results/
+可视化/
+演示截图/
+
+# === Node / build ===
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# === Secrets / credentials ===
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+.gh-token
