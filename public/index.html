@@ -8,7 +8,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:system-ui,-apple-system,sans-serif;background:#263238;color:#eceff1;overflow:hidden}
 #app{display:flex;height:100vh}
-#canvas-wrap{flex:1;position:relative;min-width:0}
+#canvas-wrap{flex:1;position:relative;min-width:320px;min-height:300px;width:100%}
 #canvas-wrap canvas{display:block}
 #sidebar{width:320px;background:#1e272e;border-left:1px solid #37474f;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
 .sidebar-section{padding:10px;border-bottom:1px solid #37474f}
@@ -182,14 +182,20 @@ const ORDER = ["S0","S1","S2","S3","S4","S5","S6"];
 const state = {current:"S0",auto:false,paused:false,teacherPowerOff:false,teacherPartCheck:false,studentReplaced:false,safetyConfirmed:false,teacherTakeover:false,reflectionDone:false,currentRole:"teacher"};
 
 const wrap = document.getElementById('canvas-wrap');
+function getWrapSize(){
+  const r = wrap.getBoundingClientRect();
+  return { w: Math.max(1, r.width || wrap.clientWidth || 800), h: Math.max(1, r.height || wrap.clientHeight || 600) };
+}
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x263238);
-const camera = new THREE.PerspectiveCamera(40, wrap.clientWidth/wrap.clientHeight, 0.1, 3000);
+let sz = getWrapSize();
+const camera = new THREE.PerspectiveCamera(40, sz.w/sz.h, 0.1, 3000);
 camera.position.set(450, 320, 520);
 let renderer;
 try { renderer = new THREE.WebGLRenderer({antialias:true}); }
 catch(e){ document.getElementById('webgl-fallback').style.display='block'; throw e; }
-renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+sz = getWrapSize();
+renderer.setSize(sz.w, sz.h);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 wrap.appendChild(renderer.domElement);
@@ -598,11 +604,19 @@ renderState();
 log("原型加载完成：S0 理论示例。","ok");
 animate();
 
-window.addEventListener('resize',()=>{
-  camera.aspect=wrap.clientWidth/wrap.clientHeight;
+function doResize(){
+  const s = getWrapSize();
+  camera.aspect = s.w / s.h;
   camera.updateProjectionMatrix();
-  renderer.setSize(wrap.clientWidth,wrap.clientHeight);
-});
+  renderer.setSize(s.w, s.h);
+}
+window.addEventListener('resize', doResize);
+if (typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(doResize).observe(wrap);
+}
+// Delayed re-init after layout settles (mobile column layout)
+requestAnimationFrame(()=>{ doResize(); });
+setTimeout(doResize, 300);
 </script>
 </body>
 </html>
