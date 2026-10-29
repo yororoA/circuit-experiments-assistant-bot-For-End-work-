@@ -135,6 +135,8 @@ import * as THREE from './vendor/three.module.min.js';
 import { OrbitControls } from './vendor/OrbitControls.js';
 import { GLTFExporter } from './vendor/GLTFExporter.js';
 
+window.THREE = THREE; // expose for GLTFLoader verification in eval
+
 const STATES = {
   S0:{name:"S0 · 理论示例",cls:"S0",face:"happy",u2:"3.333",i:"1.667",dev:"0.0%",r2:"2.0",led:"green",tags:["理论计算","R1=1kΩ","R2=2kΩ","待测量"],log:"S0：U2=3.333V，I=1.667mA。"},
   S1:{name:"S1 · 测量异常",cls:"S1",face:"concerned",u2:"2.500",i:"2.500",dev:"-25%",r2:"1.0",led:"yellow",tags:["示例读数2.50V","偏离区间","拓扑正确","元件未知"],log:"S1：U2=2.50V(-25%)，偏离比较区间。"},
