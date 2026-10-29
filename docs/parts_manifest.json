@@ -1,127 +1,151 @@
 {
-  "project": "基础电路教育助教机器人 · 桌面非接触数字原型",
-  "version": "threejs-v1.0.0",
-  "date": "2026-10-29",
-  "scale_note": "所有尺寸为概念演示尺度（mm），非制造CAD/3D打印合格依据；仅用于教学数字原型",
-  "safety_boundary": "桌面固定本体；无移动底盘、无机械臂；不插拔线、不控制供电；供电限流/断电规程属实验室实体电源",
+  "project": "电路助教机器人 Three.js 数字原型",
+  "version": "1.0.0",
+  "three_revision": "0.160.0",
+  "units": {
+    "scene": "mm",
+    "glb_export": "meters (scale 0.001 applied on export)",
+    "note": "概念尺度，非制造图/3D打印认证"
+  },
+  "parts_count": 10,
+  "parts_count_note": "10 个组件组（B01-B10），非所有物理零件数；B09 为左右侧盖组合件，B08 为双喇叭格栅组合件",
+  "glb_resources": {
+    "assembled": "models/robot_assembled.glb (29900 bytes, 12 meshes, 364 vertices, 1 texture)",
+    "parts": "models/B01.glb through models/B10.glb (each centered at origin, meters units)",
+    "roundtrip_verified": true,
+    "verification": "GLTFLoader r160 successfully reloaded robot_assembled.glb and B04.glb; textures and materials present"
+  },
   "parts": [
     {
       "id": "B01",
       "name": "桌面底座",
-      "dim_mm": {"w": 220, "h": 25, "d": 180},
+      "dimensions_mm": {"w": 220, "h": 25, "d": 180},
       "color": "#37474f",
-      "function": "整机承载，橡胶脚垫防滑；固定于实验桌",
-      "connects_to": ["B02"],
-      "mounting": "底面4处橡胶脚垫；顶面与B02外壳螺接概念",
-      "face_actions": []
+      "function": "整机承载，橡胶脚垫概念",
+      "mechanical_connects": ["B02"],
+      "electrical_to": [],
+      "glb_file": "models/B01.glb"
     },
     {
       "id": "B02",
       "name": "外壳框架",
-      "dim_mm": {"w": 200, "h": 180, "d": 160},
+      "dimensions_mm": {"w": 200, "h": 180, "d": 160},
       "color": "#eceff1",
-      "function": "主体结构，容纳计算模块与接口；前后盖可拆卸",
-      "connects_to": ["B01", "B03", "B09", "B10"],
-      "mounting": "底部与B01螺接；前面板B03卡扣；侧盖B09磁吸概念",
-      "face_actions": []
+      "function": "主体结构",
+      "mechanical_connects": ["B01", "B03", "B06", "B09", "B10"],
+      "electrical_to": [],
+      "glb_file": "models/B02.glb"
     },
     {
       "id": "B03",
       "name": "前面板",
-      "dim_mm": {"w": 190, "h": 170, "d": 12},
+      "dimensions_mm": {"w": 190, "h": 170, "d": 12},
       "color": "#ffffff",
-      "function": "嵌入显示模块B04与状态灯条B05；操作面朝向学生",
-      "connects_to": ["B02", "B04", "B05"],
-      "mounting": "四边卡扣于B02前面框",
-      "face_actions": []
+      "function": "嵌入显示模块",
+      "mechanical_connects": ["B02"],
+      "electrical_to": ["B04"],
+      "glb_file": "models/B03.glb"
     },
     {
       "id": "B04",
       "name": "显示模块",
-      "dim_mm": {"w": 150, "h": 90, "d": 8},
+      "dimensions_mm": {"w": 150, "h": 90, "d": 8},
       "color": "#1565c0",
-      "function": "LCD屏：显示电路状态、读数提示、文字反馈；不显示真实摄像头画面",
-      "connects_to": ["B03"],
-      "mounting": "内嵌于B03开窗，排线连B10",
-      "face_actions": ["screen_text", "face_expression"]
+      "function": "LCD状态显示（CanvasTexture 表情/读数）",
+      "mechanical_connects": ["B03"],
+      "electrical_to": ["B10"],
+      "glb_file": "models/B04.glb",
+      "note": "含CanvasTexture贴图，导出时已嵌入GLB"
     },
     {
       "id": "B05",
       "name": "状态灯条",
-      "dim_mm": {"w": 160, "h": 12, "d": 8},
+      "dimensions_mm": {"w": 160, "h": 12, "d": 8},
       "color": "#00838f",
-      "function": "LED灯条：绿=正常/黄=待确认/红=告警/蓝=待机；与状态机同步",
-      "connects_to": ["B03"],
-      "mounting": "B03下部嵌入，由B10驱动",
-      "face_actions": ["led_color"]
+      "function": "LED绿/黄/红状态指示",
+      "mechanical_connects": ["B03"],
+      "electrical_to": ["B10"],
+      "glb_file": "models/B05.glb"
     },
     {
       "id": "B06",
       "name": "颈部支架",
-      "dim_mm": {"w": 40, "h": 60, "d": 40},
+      "dimensions_mm": {"w": 40, "h": 60, "d": 40},
       "color": "#455a64",
-      "function": "连接外壳顶部与摄像头头舱B07；支持yaw±20°/tilt±10°非接触转动",
-      "connects_to": ["B02", "B07"],
-      "mounting": "底部轴承座于B02顶面；顶部球头接B07",
-      "face_actions": ["head_yaw", "head_tilt"]
+      "function": "连接外壳与头舱",
+      "mechanical_connects": ["B02", "B07"],
+      "electrical_to": [],
+      "glb_file": "models/B06.glb"
     },
     {
       "id": "B07",
       "name": "摄像头头舱",
-      "dim_mm": {"w": 70, "h": 50, "d": 60},
+      "dimensions_mm": {"w": 70, "h": 50, "d": 60},
       "color": "#00838f",
-      "function": "顶部舱：数字模型摄像头窗（未接真实摄像头/视觉识别）；表情随状态变化",
-      "connects_to": ["B06"],
-      "mounting": "球头铰接于B06",
-      "face_actions": ["head_yaw", "head_tilt", "camera_led"]
+      "function": "数字模型头舱（未接真实视觉），可小幅转动/点头",
+      "mechanical_connects": ["B06"],
+      "electrical_to": ["B10"],
+      "glb_file": "models/B07.glb"
     },
     {
       "id": "B08",
       "name": "双喇叭格栅",
-      "dim_mm": {"w": 180, "h": 30, "d": 10},
+      "dimensions_mm": {"w": 180, "h": 30, "d": 10},
       "color": "#263238",
-      "function": "音响出音孔（TTS为设计接口，未接入真实语音合成）",
-      "connects_to": ["B03"],
-      "mounting": "B03两侧对称嵌入",
-      "face_actions": []
+      "function": "TTS未接入，预留喇叭位置",
+      "mechanical_connects": ["B03"],
+      "electrical_to": [],
+      "glb_file": "models/B08.glb"
     },
     {
       "id": "B09",
-      "name": "侧盖",
-      "dim_mm": {"w": 10, "h": 160, "d": 140},
+      "name": "侧盖（左右组合件）",
+      "dimensions_mm": {"each_side": {"w": 10, "h": 160, "d": 140}, "assembly_total_w": 220},
       "color": "#b0bec5",
-      "function": "左右对称侧盖，散热孔阵列；可拆卸露出B10",
-      "connects_to": ["B02"],
-      "mounting": "磁吸概念，左右各一",
-      "face_actions": []
+      "function": "左右散热孔侧盖",
+      "mechanical_connects": ["B02"],
+      "electrical_to": [],
+      "glb_file": "models/B09.glb"
     },
     {
       "id": "B10",
       "name": "计算模块",
-      "dim_mm": {"w": 140, "h": 30, "d": 120},
+      "dimensions_mm": {"w": 140, "h": 30, "d": 120},
       "color": "#263238",
-      "function": "教学演示用计算板：运行状态机/前端渲染；不接串口/真实仪器/LLM/RAG/KG",
-      "connects_to": ["B02", "B04", "B05"],
-      "mounting": "B02内部导轨安装",
-      "face_actions": []
+      "function": "演示计算板",
+      "mechanical_connects": ["B02"],
+      "electrical_to": ["B04", "B05", "B07"],
+      "glb_file": "models/B10.glb"
     }
   ],
-  "scene_objects": [
-    {"id": "table", "name": "实验桌", "dim_mm": {"w": 1200, "h": 750, "d": 800}, "note": "桌面承载所有器材"},
-    {"id": "psu", "name": "直流电源", "dim_mm": {"w": 160, "h": 80, "d": "200"}, "note": "5.00V供电示意（非机器人控制）"},
-    {"id": "breadboard", "name": "面包板", "dim_mm": {"w": 170, "h": 10, "d": 55}, "note": "R1=1kΩ, R2=2kΩ 示意"},
-    {"id": "dmm", "name": "万用表", "dim_mm": {"w": 120, "h": 60, "d": 40}, "note": "显示示例读数（理论/复测）"},
-    {"id": "wires", "name": "导线", "note": "连接端子示意，非真实接线"}
+  "lab_scene_objects": [
+    {"name": "实验桌", "dimensions_mm": {"w": 1200, "h": 10, "d": 800}},
+    {"name": "电源盒 PSU", "dimensions_mm": {"w": 160, "h": 80, "d": 200}},
+    {"name": "面包板", "dimensions_mm": {"w": 170, "h": 10, "d": 55}},
+    {"name": "万用表 DMM", "dimensions_mm": {"w": 120, "h": 60, "d": 40}},
+    {"name": "R1 电阻", "type": "cylinder", "dimensions_mm": {"diameter": 10, "length": 35}},
+    {"name": "R2 电阻", "type": "cylinder", "dimensions_mm": {"diameter": 10, "length": 35}}
   ],
-  "state_machine": {
-    "S0": "理论示例 5.00V R1=1kΩ R2=2kΩ → U2=3.3333V I=1.6667mA 比较区间[3.22034,3.44262]",
-    "S1": "测量异常：R2错装1kΩ → U2=2.50V (-25%)",
-    "S2": "证据不足拒判：AI停止诊断，转教师（模拟接管）",
-    "S3": "教师核验（演示）：模拟停电+元件核对，发现R2=1kΩ",
-    "S4": "学生更换（演示）：断电状态换R2=2kΩ",
-    "S5": "待教师安全确认：独立门，AI不能授权",
-    "S6": "复测3.34V(+0.2%)，待学生反思≥5字→本页内存记录"
-  },
-  "implemented": ["Three.js WebGL场景", "PBR材质", "OrbitControls", "部件选择/爆炸slider", "状态机门禁", "头部3D转动动画", "GLB导出"],
-  "not_implemented": ["真实摄像头/视觉识别", "TTS语音合成", "LLM/RAG/KG接入", "串口/真实仪器读数", "PLC自动切断", "制造级CAD/3D打印"]
+  "implemented": [
+    "Three.js 0.160 WebGL 真三维场景",
+    "PBR MeshStandardMaterial 材质",
+    "方向光+环境光+阴影",
+    "OrbitControls 相机轨道控制（拖拽/缩放/限位）",
+    "B01-B10 部件独立 MeshGroup",
+    "部件选择/独立视图",
+    "爆炸视图 slider",
+    "CanvasTexture 表情显示屏（随状态变化）",
+    "头部 3D 转动动画（rAF tween）",
+    "状态机 S0-S6 门禁（教师接管/核验/学生更换/安全确认/反思）",
+    "GLB 整机+10部件导出（浏览器内 GLTFExporter r160）",
+    "GLB GLTFLoader 回读验证通过"
+  ],
+  "not_implemented": [
+    "真实摄像头/视觉识别",
+    "TTS 语音合成",
+    "LLM/RAG/KG 知识接入",
+    "串口/真实仪器通信",
+    "PLC 自动切断（安全=实验电源硬件限流+实体断电规程，属教师/实验室）",
+    "BKT 知识追踪训练（仅规则标签规划）"
+  ]
 }
