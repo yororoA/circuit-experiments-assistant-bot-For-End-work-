@@ -6,7 +6,7 @@
 - `lab-engine.js` — ES module；公开 API 以 `lab-contract.json` 为准
 - `lab-contract.json` — 权威接口合同（UI/report/Three scene update 只认此）
 - `fixtures/scenarios.mjs` — 场景 + 候选假设空间（候选自带 topology；groundTruth 仅测试）
-- `tests/run-tests.mjs` — `node tests/run-tests.mjs` → 18/18 PASS
+- `tests/run-tests.mjs` — `node tests/run-tests.mjs` → 22/22 PASS
 
 ## 教学机制
 1. 学生先 commit 预测 U2（否则门禁）；两探针选 P/N/G 测 DC。
