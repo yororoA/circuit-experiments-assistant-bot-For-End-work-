@@ -19,6 +19,8 @@
   - **盲诊断（challenge）**：actual 隐藏，学生测够 U_NG+U_PG 申请教师复核，批准后学生自输校正值，错选不收敛不能反思。
 - 角色切换（教师/学生）+ 权限门：教师复核批准、学生 applyCorrection、教师不能代学生 reflect。
 - 单零件隔离 / 爆炸视图 / 模型查看模式。
+- P/N/G 探针在桌面 3D 场景中可点击（raycast），与 UI 探针选择同步。
+- pause/resume：暂停时禁动作，相机可观察；reset 复位探针与证据。
 - GLB 导出按钮（选中零件，home pose，米制）。
 - 屏幕/PCB 背板分离，near=1/far=1200 深度精度（无 z-fighting 绿纹）。
 
