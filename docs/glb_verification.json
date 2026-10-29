@@ -1,0 +1,480 @@
+{
+  "assembled": {
+    "size": {
+      "w": 0.22,
+      "h": 0.31,
+      "d": 0.188
+    },
+    "center": {
+      "x": 0,
+      "y": 0.155,
+      "z": 0.004
+    },
+    "verts": 460,
+    "tex": 1,
+    "nodes": [
+      {
+        "name": "AuxScene",
+        "type": "Group"
+      },
+      {
+        "name": "robot_assembled",
+        "type": "Object3D"
+      },
+      {
+        "name": "",
+        "type": "Object3D"
+      },
+      {
+        "name": "B01_桌面底座",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_0",
+        "type": "Mesh"
+      },
+      {
+        "name": "B02_外壳框架",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_1",
+        "type": "Mesh"
+      },
+      {
+        "name": "mesh_2",
+        "type": "Mesh"
+      },
+      {
+        "name": "mesh_3",
+        "type": "Mesh"
+      },
+      {
+        "name": "mesh_4",
+        "type": "Mesh"
+      },
+      {
+        "name": "mesh_5",
+        "type": "Mesh"
+      },
+      {
+        "name": "B03_前面板",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_6",
+        "type": "Mesh"
+      },
+      {
+        "name": "B04_显示模块",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_7",
+        "type": "Mesh"
+      },
+      {
+        "name": "B05_状态灯条",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_8",
+        "type": "Mesh"
+      },
+      {
+        "name": "B06_颈部支架",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_9",
+        "type": "Mesh"
+      },
+      {
+        "name": "B07_摄像头头舱",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_10",
+        "type": "Mesh"
+      },
+      {
+        "name": "mesh_11",
+        "type": "Mesh"
+      },
+      {
+        "name": "B08_双喇叭格栅",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_12",
+        "type": "Mesh"
+      },
+      {
+        "name": "B09_侧盖",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_13",
+        "type": "Mesh"
+      },
+      {
+        "name": "mesh_14",
+        "type": "Mesh"
+      },
+      {
+        "name": "B10_计算模块",
+        "type": "Object3D"
+      },
+      {
+        "name": "mesh_15",
+        "type": "Mesh"
+      }
+    ]
+  },
+  "parts": {
+    "B01": {
+      "size": {
+        "w": 0.22,
+        "h": 0.025,
+        "d": 0.18
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 24,
+      "tex": 0,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B01",
+          "type": "Object3D"
+        },
+        {
+          "name": "B01_桌面底座",
+          "type": "Object3D"
+        },
+        {
+          "name": "B01_mesh",
+          "type": "Mesh"
+        }
+      ]
+    },
+    "B02": {
+      "size": {
+        "w": 0.2,
+        "h": 0.188,
+        "d": 0.16
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 120,
+      "tex": 0,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B02",
+          "type": "Object3D"
+        },
+        {
+          "name": "B02_外壳框架",
+          "type": "Object3D"
+        },
+        {
+          "name": "B02_mesh",
+          "type": "Mesh"
+        },
+        {
+          "name": "B02_mesh_1",
+          "type": "Mesh"
+        },
+        {
+          "name": "B02_mesh_2",
+          "type": "Mesh"
+        },
+        {
+          "name": "B02_mesh_3",
+          "type": "Mesh"
+        },
+        {
+          "name": "B02_mesh_4",
+          "type": "Mesh"
+        }
+      ]
+    },
+    "B03": {
+      "size": {
+        "w": 0.19,
+        "h": 0.17,
+        "d": 0.012
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 24,
+      "tex": 0,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B03",
+          "type": "Object3D"
+        },
+        {
+          "name": "B03_前面板",
+          "type": "Object3D"
+        },
+        {
+          "name": "B03_mesh",
+          "type": "Mesh"
+        }
+      ]
+    },
+    "B04": {
+      "size": {
+        "w": 0.15,
+        "h": 0.09,
+        "d": 0.008
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 24,
+      "tex": 1,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B04",
+          "type": "Object3D"
+        },
+        {
+          "name": "B04_显示模块",
+          "type": "Object3D"
+        },
+        {
+          "name": "B04_mesh",
+          "type": "Mesh"
+        }
+      ]
+    },
+    "B05": {
+      "size": {
+        "w": 0.16,
+        "h": 0.012,
+        "d": 0.008
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 24,
+      "tex": 0,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B05",
+          "type": "Object3D"
+        },
+        {
+          "name": "B05_状态灯条",
+          "type": "Object3D"
+        },
+        {
+          "name": "B05_mesh",
+          "type": "Mesh"
+        }
+      ]
+    },
+    "B06": {
+      "size": {
+        "w": 0.04,
+        "h": 0.06,
+        "d": 0.04
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 24,
+      "tex": 0,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B06",
+          "type": "Object3D"
+        },
+        {
+          "name": "B06_颈部支架",
+          "type": "Object3D"
+        },
+        {
+          "name": "B06_mesh",
+          "type": "Mesh"
+        }
+      ]
+    },
+    "B07": {
+      "size": {
+        "w": 0.07,
+        "h": 0.05,
+        "d": 0.0645
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 124,
+      "tex": 0,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B07",
+          "type": "Object3D"
+        },
+        {
+          "name": "B07_摄像头头舱",
+          "type": "Object3D"
+        },
+        {
+          "name": "B07_mesh",
+          "type": "Mesh"
+        },
+        {
+          "name": "B07_mesh_1",
+          "type": "Mesh"
+        }
+      ]
+    },
+    "B08": {
+      "size": {
+        "w": 0.18,
+        "h": 0.03,
+        "d": 0.01
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 24,
+      "tex": 0,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B08",
+          "type": "Object3D"
+        },
+        {
+          "name": "B08_双喇叭格栅",
+          "type": "Object3D"
+        },
+        {
+          "name": "B08_mesh",
+          "type": "Mesh"
+        }
+      ]
+    },
+    "B09": {
+      "size": {
+        "w": 0.22,
+        "h": 0.16,
+        "d": 0.14
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 48,
+      "tex": 0,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B09",
+          "type": "Object3D"
+        },
+        {
+          "name": "B09_侧盖",
+          "type": "Object3D"
+        },
+        {
+          "name": "B09_mesh",
+          "type": "Mesh"
+        },
+        {
+          "name": "B09_mesh_1",
+          "type": "Mesh"
+        }
+      ]
+    },
+    "B10": {
+      "size": {
+        "w": 0.14,
+        "h": 0.03,
+        "d": 0.12
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "verts": 24,
+      "tex": 0,
+      "nodes": [
+        {
+          "name": "AuxScene",
+          "type": "Group"
+        },
+        {
+          "name": "B10",
+          "type": "Object3D"
+        },
+        {
+          "name": "B10_计算模块",
+          "type": "Object3D"
+        },
+        {
+          "name": "B10_mesh",
+          "type": "Mesh"
+        }
+      ]
+    }
+  }
+}

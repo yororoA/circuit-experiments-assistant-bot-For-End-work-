@@ -190,6 +190,7 @@ const parts = {};
 const robotGroup = new THREE.Group();
 scene.add(robotGroup);
 function addPart(id,name,desc,group){
+  group.name=id+'_'+name;
   group.userData={id,name,desc};
   robotGroup.add(group);
   parts[id]={group,homePos:group.position.clone()};
@@ -484,27 +485,46 @@ function downloadGLB(blob, filename){
   const a=document.createElement('a'); a.href=url; a.download=filename; a.click();
   URL.revokeObjectURL(url);
 }
+// Reset all parts to home pose before export (neutral, no explode offset)
+function resetPartsToHome(){
+  Object.keys(parts).forEach(id=>{
+    parts[id].group.position.copy(parts[id].homePos);
+    parts[id].group.rotation.set(0,0,0);
+  });
+}
 document.getElementById('btnExportAll').onclick=()=>{
-  // Wrap in root: clone keeps mm local coords, root scales to meters
+  resetPartsToHome();
   const root=new THREE.Group();
+  root.name='robot_assembled';
   const clone=robotGroup.clone(true);
-  clone.position.set(0,0,0); // zero robotGroup world offset for clean export origin
+  clone.position.set(0,0,0);
+  // Set stable names on groups and meshes
+  Object.keys(parts).forEach(id=>{
+    const p=parts[id];
+    p.group.traverse(o=>{ if(o.isMesh && !o.name) o.name=id+'_mesh'; });
+  });
   root.add(clone);
   root.scale.setScalar(0.001);
   exporter.parse(root, (result)=>{
     downloadGLB(new Blob([result],{type:'model/gltf-binary'}), 'robot_assembled.glb');
-    log('已导出整机 GLB（米制）。','ok');
+    log('已导出整机 GLB（米制，home pose）。','ok');
   }, (err)=>{ log('导出失败：'+err,'err'); }, {binary:true});
 };
 document.getElementById('btnExportPart').onclick=()=>{
   if(!selectedPart){ log('请先在部件列表选择一个部件。','warn'); return; }
+  resetPartsToHome();
   const p=parts[selectedPart];
   const root=new THREE.Group();
+  root.name=selectedPart;
   const clone=p.group.clone(true);
-  // Center at origin in local mm space
+  clone.position.copy(p.homePos);
+  clone.rotation.set(0,0,0);
+  // Center at origin
   const box3=new THREE.Box3().setFromObject(clone);
   const center=box3.getCenter(new THREE.Vector3());
   clone.position.sub(center);
+  // Set mesh names
+  clone.traverse(o=>{ if(o.isMesh) o.name=selectedPart+'_mesh'; });
   root.add(clone);
   root.scale.setScalar(0.001);
   exporter.parse(root, (result)=>{
@@ -516,6 +536,14 @@ document.getElementById('btnExportPart').onclick=()=>{
 window.demo={
   getState:()=>({...state}),
   getSnapshot:()=>({state:state.current,head:{yaw:headYaw,tilt:headTilt}}),
+  getDiagnostics:()=>({
+    threeRevision: THREE.REVISION,
+    rendererInfo: renderer.info.render,
+    visibleParts: Object.keys(parts).filter(id=>parts[id].group.visible),
+    modelMode: modelMode,
+    selectedPart: selectedPart,
+    explode: explodeCurrent
+  }),
   reset:()=>document.getElementById('btnReset').onclick()
 };
 
