@@ -38,6 +38,22 @@ button.primary{background:#00838f;border-color:#00838f}
 #tabs button.active{border-bottom-color:#00838f;color:#80cbc4}
 .tab-panel{display:none;padding:8px;font-size:10px;line-height:1.5}.tab-panel.active{display:block}
 #webgl-fallback{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ef9a9a;font-size:14px;text-align:center}
+@media (max-width: 760px){
+  body{overflow:auto}
+  #app{flex-direction:column;height:auto;min-height:100vh}
+  #canvas-wrap{height:45vh;min-height:300px;flex:none}
+  #sidebar{width:100%;height:auto;border-left:none;border-top:1px solid #37474f}
+  button{min-height:44px;font-size:14px;padding:8px 12px;margin:3px}
+  .sidebar-section h3{font-size:13px}
+  #readout{font-size:13px}
+  #log{font-size:12px;max-height:150px}
+  .part-item{font-size:13px;padding:8px}
+  #part-detail{font-size:12px}
+  #status-bar{font-size:11px}
+  #tabs button{font-size:12px;padding:10px 4px}
+  .tab-panel{font-size:12px}
+  .tag{font-size:11px;padding:3px 8px}
+}
 </style>
 </head>
 <body>
@@ -113,23 +129,35 @@ button.primary{background:#00838f;border-color:#00838f}
       </div>
       <div class="tab-panel active" id="t-curriculum">
         <p><strong>课程理解：理论→设计映射</strong></p>
-        <p>• 人 should/being (p6)：教师定目标与价值。</p>
-        <p>• 三元价值秩序 (p52)：教师主导、学生主体。</p>
-        <p>• 具身认知 (p58/p59)：学生动手与环境交互。</p>
-        <p>• 人在回路置信度 (p78/p83)：低置信拒判转教师。</p>
-        <p>• BKT (p149/p156)：规则标签规划，未训练BKT。</p>
-        <p>• 教学闭环 (p161)：实验→观察→反思。</p>
-        <p>• 多源互证 (p187)：拓扑/接口/断电三问。</p>
-        <p>• 师生协同 (p223)：教师保留上电/断电/最终责任。</p>
-        <p>• 可解释五条件 (p225)：证据标签可见。</p>
-        <p>• 验收四问 (p229)：目标/证据/责任/反馈修正。</p>
+        <p>• 人 should/being (p6)：教师定目标与价值，AI 不替代判断。</p>
+        <p>• 三元价值秩序 (p52)：教师主导、学生主体、技术工具辅助。</p>
+        <p>• 具身认知 (p58/p78)：学生双手操作真实实验台，数字几何不代替动手。</p>
+        <p>• 人在回路置信度 (p83)：低置信拒判转教师，不自动下结论。</p>
+        <p>• BKT 知识追踪 (p156)：规则标签与状态机规划，未实现真实 BKT 模型。</p>
+        <p>• 教学闭环 (p161)：实验应用→观察→反思，数据/规划/认知反馈转人。</p>
+        <p>• 多源互证 (p187)：测量数据与元件解释相互核验，不一致时转教师。</p>
+        <p>• 师生协同 (p223)：教师保留上电授权、断电决策、最终责任。</p>
+        <p>• 可解释五条件 (p225)：证据标签、读数、门禁全程可见可复核。</p>
+        <p>• 验收四问 (p229)：目标谁设/证据可否复核/责任谁担/结果能否反馈修正。本页日志仅内存演示，重置/关闭即清除。</p>
       </div>
       <div class="tab-panel" id="t-assignment">
-        <p>11项作业要求映射见报告正文；本数字原型实现状态机/部件/爆炸视图。</p>
+        <p><strong>11项作业要求→报告章→数字功能→未实现边界</strong></p>
+        <p>1. 问题定义(p3)：本原型场景 S0-S6 演示 → 已实现状态机；真实实验室需求调研未做。</p>
+        <p>2. 系统设计(p52)：教师/学生/AI/环境四方角色 → 已实现角色切换按钮；真实鉴权未做。</p>
+        <p>3. 具身认知(p58)：学生操作真实电路 → 已保留双手空间概念；真实动手未接入。</p>
+        <p>4. 人在回路(p83)：低置信拒判 → 已实现 S2 证据不足拒判转教师。</p>
+        <p>5. 核心功能(p149)：预置证据卡/读数/角色反馈入口 → 已实现；真实视觉/语音识别未接。</p>
+        <p>6. 安全边界(p175)：不碰线/不控供电/教师断电 → 已实现状态机门禁；硬件限流未做。</p>
+        <p>7. 部件结构(p187)：B01-B10 可拆概念模型 → 已实现 Three.js 爆炸视图/GLB 导出；制造 CAD 未做。</p>
+        <p>8. 关键技术(p205)：规则引擎/分层架构是规划 → 数字原型=Canvas3D/确定状态机；RAG/KG/LLM 未接。</p>
+        <p>9. 教学闭环(p223)：实验→观察→反思 → 已实现 S6 反思输入门禁；真实学习数据追踪未做。</p>
+        <p>10. 可解释性(p225)：证据五条件 → 已实现读数/偏差/标签可见。</p>
+        <p>11. 验收与局限(p229)：验收四问 → 已实现状态接口 getState/getDiagnostics；真实课堂评估未做。</p>
       </div>
       <div class="tab-panel" id="t-boundary">
-        <p><strong>已实现：</strong>Three.js WebGL、PBR材质、Orbit拖拽、部件选择/爆炸slider、状态机门禁、头部3D转动、GLB导出。</p>
-        <p><strong>未实现：</strong>真实摄像头/视觉识别、TTS、LLM/RAG/KG、串口/真实仪器、PLC自动切断。</p>
+        <p><strong>已实现：</strong>Three.js WebGL r160、PBR材质、相机轨道控制、部件选择/爆炸slider、状态机门禁、头部3D转动、GLB导出（11件）。</p>
+        <p><strong>未实现：</strong>真实摄像头/视觉识别、TTS语音、LLM/RAG/KG知识图谱、串口/真实仪器读数、PLC自动切断（本原型不涉及供电控制）。</p>
+        <p><strong>概念声明：</strong>模型为概念示意，非制造CAD；机器人不插拔线、不控制供电；供电断电规程属于教师与实验室硬件。</p>
       </div>
     </div>
   </div>
