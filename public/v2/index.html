@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CircuitBridge · 桥式实验伴学器</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2300838f'/%3E%3Cpath d='M8 20 L16 8 L24 20' stroke='%23f5f0e8' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='8' cy='20' r='2.5' fill='%23f5f0e8'/%3E%3Ccircle cx='16' cy='8' r='2.5' fill='%23f5f0e8'/%3E%3Ccircle cx='24' cy='20' r='2.5' fill='%23f5f0e8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="6" fill="#00838f"/>
+      <path d="M8 20 L16 8 L24 20" stroke="#f5f0e8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="8" cy="20" r="2.5" fill="#f5f0e8"/>
+      <circle cx="16" cy="8" r="2.5" fill="#f5f0e8"/>
+      <circle cx="24" cy="20" r="2.5" fill="#f5f0e8"/>
+    </svg>
+    <div class="brand-text">
+      <h1>CircuitBridge</h1>
+      <span>桥式实验伴学器</span>
+    </div>
+  </div>
+
+  <nav class="mode-tabs" role="tablist" aria-label="实验模式">
+    <button id="tab-free" class="tab active" role="tab" aria-selected="true">自由探究</button>
+    <button id="tab-challenge" class="tab" role="tab" aria-selected="false">辨因挑战</button>
+  </nav>
+
+  <div class="topbar-right">
+    <button id="btn-structure" class="ghost-btn" type="button">结构观察</button>
+    <div class="role-switch" role="group" aria-label="角色">
+      <button id="role-student" class="role-btn active" type="button">学生</button>
+      <button id="role-teacher" class="role-btn" type="button">教师</button>
+    </div>
+  </div>
+</header>
+
+<main class="layout" id="layout">
+
+  <!-- ========== 左：实验台 ========== -->
+  <section class="stage" aria-label="实验台">
+    <div class="scene-wrap">
+      <div id="scene-container" class="scene-container">
+        <div class="scene-loading" id="scene-loading">
+          <div class="spinner" aria-hidden="true"></div>
+          <p class="scene-loading-title">3D 实验台加载中…</p>
+          <p class="scene-loading-sub">等待 scene.js 模型模块接入；下方电路示意与测量可直接操作</p>
+        </div>
+      </div>
+
+      <div class="meter" id="meter" aria-live="polite">
+        <div class="meter-head">
+          <span class="meter-label">直流电压表</span>
+          <span class="meter-mode" id="meter-mode">DC</span>
+        </div>
+        <div class="meter-readout" id="meter-readout">--.-- V</div>
+        <div class="meter-sub" id="meter-sub">未测量</div>
+      </div>
+    </div>
+
+    <div class="circuit-panel">
+      <div class="circuit-head">
+        <h2 class="panel-title">电路示意</h2>
+        <div class="probe-arm-row" role="group" aria-label="选择当前探针">
+          <button id="arm-a" class="probe-arm active" type="button" aria-pressed="true">
+            <span class="dot dot-a"></span>探针 A
+          </button>
+          <button id="arm-b" class="probe-arm" type="button" aria-pressed="false">
+            <span class="dot dot-b"></span>探针 B
+          </button>
+        </div>
+      </div>
+
+      <svg id="circuit-svg" viewBox="0 0 320 320" role="img" aria-label="串联分压电路：点击节点放置当前探针">
+        <!-- 导线 -->
+        <g class="wires" stroke="#5a5a5a" stroke-width="2" fill="none">
+          <!-- P 到 R1 顶端 -->
+          <line x1="160" y1="60" x2="160" y2="100"/>
+          <!-- R1 底端到 N -->
+          <line x1="160" y1="160" x2="160" y2="200"/>
+          <!-- N 到 R2 顶端 -->
+          <line x1="160" y1="200" x2="160" y2="220"/>
+          <!-- R2 底端到 G -->
+          <line x1="160" y1="280" x2="160" y2="300"/>
+          <!-- 电源左支路: P 左到 E 上, E 下到 G 左 -->
+          <line x1="160" y1="60" x2="60" y2="60"/>
+          <line x1="60" y1="60" x2="60" y2="150"/>
+          <line x1="60" y1="190" x2="60" y2="300"/>
+          <line x1="60" y1="300" x2="160" y2="300"/>
+        </g>
+
+        <!-- R1 电阻符号（锯齿） -->
+        <g class="resistor" id="r1-symbol">
+          <path d="M160 100 L150 110 L170 120 L150 130 L170 140 L150 150 L160 160"
+                stroke="#3a3a3a" stroke-width="2" fill="none" stroke-linejoin="round"/>
+          <text x="185" y="135" class="res-label" id="r1-label">R1 1.0kΩ</text>
+        </g>
+
+        <!-- R2 电阻符号 -->
+        <g class="resistor" id="r2-symbol">
+          <path d="M160 220 L150 230 L170 240 L150 250 L170 260 L150 270 L160 280"
+                stroke="#3a3a3a" stroke-width="2" fill="none" stroke-linejoin="round"/>
+          <text x="185" y="255" class="res-label" id="r2-label">R2 2.0kΩ</text>
+        </g>
+
+        <!-- 电源 E -->
+        <g class="source" id="e-symbol">
+          <circle cx="60" cy="170" r="20" fill="#faf6ee" stroke="#3a3a3a" stroke-width="2"/>
+          <text x="60" y="166" text-anchor="middle" class="res-label">+</text>
+          <text x="60" y="184" text-anchor="middle" class="res-label">−</text>
+          <text x="60" y="138" text-anchor="middle" class="res-label" id="e-label">E 5.0V</text>
+        </g>
+
+        <!-- 节点 P / N / G（可点击） -->
+        <g class="nodes">
+          <circle class="node" id="node-P" data-node="P" cx="160" cy="60" r="14" fill="#faf6ee" stroke="#3a3a3a" stroke-width="2.5"/>
+          <text x="160" y="65" text-anchor="middle" class="node-label">P</text>
+
+          <circle class="node" id="node-N" data-node="N" cx="160" cy="200" r="14" fill="#faf6ee" stroke="#3a3a3a" stroke-width="2.5"/>
+          <text x="160" y="205" text-anchor="middle" class="node-label">N</text>
+
+          <circle class="node" id="node-G" data-node="G" cx="160" cy="300" r="14" fill="#faf6ee" stroke="#3a3a3a" stroke-width="2.5"/>
+          <text x="160" y="305" text-anchor="middle" class="node-label">G</text>
+        </g>
+
+        <!-- 探针指示器（动态放置） -->
+        <g id="probe-a-indicator" class="probe-indicator" opacity="0">
+          <circle r="8" fill="#00838f" stroke="#fff" stroke-width="2"/>
+          <text y="-14" text-anchor="middle" class="probe-tag">A</text>
+        </g>
+        <g id="probe-b-indicator" class="probe-indicator" opacity="0">
+          <circle r="8" fill="#e65100" stroke="#fff" stroke-width="2"/>
+          <text y="-14" text-anchor="middle" class="probe-tag">B</text>
+        </g>
+      </svg>
+
+      <p class="svg-hint">点击节点放置当前探针（或用下拉框等价操作）</p>
+    </div>
+  </section>
+
+  <!-- ========== 右：工作台 ========== -->
+  <aside class="workbench" id="workbench" aria-label="工作台">
+
+    <div class="phase-banner" id="phase-banner" role="status">等待预测</div>
+
+    <p class="instruction" id="instruction">
+      先预测，再选择 P / N / G 测量点。U_NG 约 2.5V 时可能有不同原因。
+    </p>
+
+    <!-- 自由探索：可编辑参数 -->
+    <div class="card" id="config-card">
+      <h3>电路参数（可调整）</h3>
+      <div class="grid-3">
+        <label class="field">
+          <span>电源 E</span>
+          <input type="number" id="cfg-E" step="0.1" min="0" max="12" value="5">
+          <em>V</em>
+        </label>
+        <label class="field">
+          <span>R1</span>
+          <input type="number" id="cfg-R1" step="100" min="1" value="1000">
+          <em>Ω</em>
+        </label>
+        <label class="field">
+          <span>R2</span>
+          <input type="number" id="cfg-R2" step="100" min="1" value="2000">
+          <em>Ω</em>
+        </label>
+      </div>
+      <button id="btn-apply-config" class="btn primary" type="button">应用配置</button>
+    </div>
+
+    <!-- 辨因挑战：只读标称 + 场景选择 -->
+    <div class="card hidden" id="setup-card">
+      <h3>标称接线（实际已隐藏）</h3>
+      <div class="setup-display" id="setup-display">E = 5.0 V，R1 = 1.0 kΩ，R2 = 2.0 kΩ</div>
+      <div class="scenario-pick" id="scenario-pick">
+        <button class="scenario-btn" data-scenario="divider-ambiguity-wrongR2" type="button">挑战 A</button>
+        <button class="scenario-btn" data-scenario="divider-ambiguity-source" type="button">挑战 B</button>
+      </div>
+      <p class="note">选择编号开始；本例原因不预先告知。</p>
+    </div>
+
+    <!-- 预测 -->
+    <div class="card" id="predict-card">
+      <h3>预测中点电压 U<sub>N</sub>G</h3>
+      <div class="row">
+        <label class="field grow">
+          <input type="number" id="predict-u2" step="0.01" min="0" max="12" placeholder="0–12">
+          <em>V</em>
+        </label>
+        <button id="btn-predict" class="btn primary" type="button">提交预测</button>
+      </div>
+      <p class="prediction-shown" id="prediction-shown" hidden></p>
+    </div>
+
+    <!-- 测量 -->
+    <div class="card" id="measure-card">
+      <h3>设置探针并测量</h3>
+      <div class="grid-3">
+        <label class="field">
+          <span>探针 A</span>
+          <select id="probe-a-select">
+            <option value="P">P</option>
+            <option value="N">N</option>
+            <option value="G">G</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>探针 B</span>
+          <select id="probe-b-select">
+            <option value="P">P</option>
+            <option value="N" selected>N</option>
+            <option value="G">G</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>模式</span>
+          <select id="measure-mode">
+            <option value="DC" selected>DC</option>
+            <option value="AC">AC</option>
+          </select>
+        </label>
+      </div>
+      <button id="btn-measure" class="btn primary" type="button">测量</button>
+      <p class="error-inline" id="measure-error" role="alert" hidden></p>
+    </div>
+
+    <!-- 证据（折叠） -->
+    <details class="card evidence-card" id="evidence-card">
+      <summary>证据记录 <span class="badge" id="evidence-count">0</span></summary>
+      <div id="evidence-list" class="evidence-list"></div>
+      <div id="invalidated-list" class="invalidated-list" hidden></div>
+    </details>
+
+    <!-- 自由探究：当前配置与公式（非盲诊断） -->
+    <div class="card" id="config-info-card">
+      <h3>当前配置与分压关系</h3>
+      <div id="config-info-body" class="config-info">
+        <div class="config-row">
+          <span class="config-label">电源 E</span>
+          <span class="config-val" id="info-E">—</span>
+        </div>
+        <div class="config-row">
+          <span class="config-label">R1 / R2</span>
+          <span class="config-val" id="info-R">—</span>
+        </div>
+        <div class="config-formula">U<sub>NG</sub> = E · R2 / (R1 + R2)</div>
+        <div class="config-row">
+          <span class="config-label">预测</span>
+          <span class="config-val" id="info-predict">—</span>
+        </div>
+        <div class="config-row">
+          <span class="config-label">已测</span>
+          <span class="config-val" id="info-measured">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 候选（仅辨因挑战） -->
+    <div class="card hidden" id="candidate-card">
+      <h3>可能原因（按证据排除）</h3>
+      <div id="candidate-list" class="candidate-list">
+        <p class="empty-hint">尚未测量，候选全部开放。</p>
+      </div>
+    </div>
+
+    <!-- 提示 -->
+    <div class="card" id="hint-card">
+      <button id="btn-hint" class="btn" type="button">获取提示</button>
+      <p id="hint-text" class="hint-text" hidden></p>
+    </div>
+
+    <!-- 辨因挑战：复核流 -->
+    <div class="card hidden" id="review-card">
+      <h3>复核与校正</h3>
+      <button id="btn-request-review" class="btn" type="button">申请教师复核</button>
+      <button id="btn-approve" class="btn" type="button" disabled>教师批准校正</button>
+
+      <div id="correction-inputs" class="correction-inputs hidden">
+        <h4>学生主动输入校正值</h4>
+        <p class="note">从证据判断该改哪一项；系统不自动填正确值。</p>
+        <div class="grid-3">
+          <label class="field">
+            <span>E</span>
+            <input type="number" id="corr-E" step="0.1" min="0" max="12">
+            <em>V</em>
+          </label>
+          <label class="field">
+            <span>R1</span>
+            <input type="number" id="corr-R1" step="100" min="1">
+            <em>Ω</em>
+          </label>
+          <label class="field">
+            <span>R2</span>
+            <input type="number" id="corr-R2" step="100" min="1">
+            <em>Ω</em>
+          </label>
+        </div>
+        <button id="btn-apply-correction" class="btn primary" type="button">应用校正</button>
+      </div>
+      <p class="error-inline" id="review-error" role="alert" hidden></p>
+    </div>
+
+    <!-- 反思 -->
+    <div class="card" id="reflect-card">
+      <h3>你的解释（≥5 字）</h3>
+      <textarea id="reflect-text" rows="3" placeholder="根据证据说明你的结论…"></textarea>
+      <button id="btn-reflect" class="btn primary" type="button">提交解释</button>
+      <p class="error-inline" id="reflect-error" role="alert" hidden></p>
+    </div>
+
+    <div class="toolbar">
+      <button id="btn-reset" class="btn ghost" type="button">重置实验</button>
+      <span class="derived" id="derived-line"></span>
+    </div>
+
+    <p class="boundary-note">数字概念原型，非真实仪器；角色仅教学演示，不涉及鉴权或硬件供电。</p>
+  </aside>
+
+  <!-- ========== 结构观察抽屉 ========== -->
+  <section class="structure-drawer hidden" id="structure-drawer" aria-label="结构观察">
+    <div class="structure-header">
+      <h2>结构观察</h2>
+      <button id="btn-close-structure" class="btn" type="button">返回实验</button>
+    </div>
+    <div class="structure-body">
+      <div class="structure-col">
+        <h3>视角</h3>
+        <div class="view-row">
+          <button class="view-btn" data-view="front" type="button">正视</button>
+          <button class="view-btn" data-view="side" type="button">侧视</button>
+          <button class="view-btn" data-view="top" type="button">俯视</button>
+          <button class="view-btn active" data-view="iso" type="button">斜俯</button>
+        </div>
+        <h3>爆炸分解</h3>
+        <label class="range-row">
+          <input type="range" id="explode-slider" min="0" max="1" step="0.01" value="0">
+          <span id="explode-val">0%</span>
+        </label>
+        <div class="view-row">
+          <button id="btn-return-assembly" class="btn" type="button">恢复装配</button>
+          <button id="btn-fov" class="btn" type="button">镜头视场</button>
+        </div>
+        <h3>导出</h3>
+        <div class="view-row">
+          <button id="btn-export-all" class="btn" type="button">导出整机 GLB</button>
+          <button id="btn-export-b02" class="btn" type="button">导出 B02 GLB</button>
+        </div>
+        <p class="note">离线副本：
+          <a href="assets/glb/robot_whole.glb" download="robot_whole.glb">robot_whole.glb</a> ·
+          <a href="assets/glb/B02.glb" download="B02.glb">B02.glb</a>
+        </p>
+        <p class="note" id="export-status">模型模块就绪后导出可用。</p>
+      </div>
+      <div class="structure-col">
+        <h3>部件（B01–B10）</h3>
+        <ul class="parts-list" id="parts-list"></ul>
+        <div id="part-detail" class="part-detail">选择左侧部件查看信息与安装说明。</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="alert" hidden></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
