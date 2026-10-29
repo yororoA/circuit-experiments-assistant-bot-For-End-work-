@@ -45,7 +45,7 @@ export function createProductScene(container, opts = {}) {
   // Scene & camera
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xeee8de);
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+  const camera = new THREE.PerspectiveCamera(45, 1, 1, 1200);
   camera.position.set(300, 250, 400);
 
   // Controls
@@ -218,13 +218,13 @@ export function createProductScene(container, opts = {}) {
   let screenCanvas, screenCtx, screenTex;
   {
     const g = new THREE.Group();
-    // Thin PCB back plate (1mm thick, real mesh)
+    // PCB back plate (1mm thick, green PCB)
     const pcbBack = new THREE.Mesh(
       new THREE.BoxGeometry(128, 70, 1),
       new THREE.MeshStandardMaterial({ color: 0x1b5e20, roughness: 0.6 })
     );
     g.add(pcbBack);
-    // Screen face with texture
+    // Screen face with texture (offset 1.1mm from PCB, 0.6mm gap)
     screenCanvas = document.createElement('canvas');
     screenCanvas.width = 256; screenCanvas.height = 160;
     screenCtx = screenCanvas.getContext('2d');
@@ -235,7 +235,7 @@ export function createProductScene(container, opts = {}) {
       new THREE.PlaneGeometry(127, 69),
       new THREE.MeshStandardMaterial({ map: screenTex, roughness: 0.2 })
     );
-    screen.position.set(0, 0, 0.55);
+    screen.position.set(0, 0, 1.1);
     g.add(screen);
     g.position.set(0, 110, 72);
     addPart('B04', '显示模块', '宽屏显示，表情与读数动态，嵌入前盖屏窗', g);
