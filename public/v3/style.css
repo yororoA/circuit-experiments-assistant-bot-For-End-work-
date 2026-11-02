@@ -180,3 +180,16 @@ input, select, textarea {
 .acc[open] summary { border-bottom: 1px solid var(--border); color: var(--teal-dark); }
 .acc-body { padding: 12px 14px; }
 .acc h4 { margin: 8px 0 4px; font-size: 12px; color: var(--soft); }
+
+/* 390px mobile: prevent horizontal overflow */
+@media (max-width: 480px) {
+  body { min-width: 0; }
+  .topbar { flex-wrap: wrap; gap: 8px; }
+  .top-right { margin-left: 0; width: 100%; justify-content: flex-end; gap: 8px; }
+  .role-btn { min-width: 44px; min-height: 44px; }
+  .row { flex-wrap: wrap; }
+  .row > label { min-width: 0; flex: 1 1 140px; }
+  input, select, textarea { width: 100%; min-width: 0; }
+  .scene-container, .schematic, .workbench { min-width: 0; }
+  .scene-container canvas, .schematic svg { max-width: 100%; height: auto; }
+}
