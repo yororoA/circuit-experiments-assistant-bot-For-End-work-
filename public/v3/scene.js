@@ -159,7 +159,7 @@ export function createProductScene(container, opts = {}) {
     housing.position.z = -21;
     housing.castShadow = true;
     g.add(housing);
-    // Lens (visible at bottom, pointing down)
+    // Lens (visible at bottom, pointing down local -Y)
     const lens = new THREE.Mesh(new THREE.CylinderGeometry(10, 11, 6, 24), matDark);
     lens.position.y = -21;
     g.add(lens);
@@ -170,6 +170,8 @@ export function createProductScene(container, opts = {}) {
     g.add(ring);
     g.position.set(0, 235, 0);
     sensorHead = g;
+    // Home quaternion: lens points straight down (0,-1,0)
+    const homeQuat = g.quaternion.clone();
     addPart('B06', '传感头舱', '俯视成像头，可见镜头+状态光环', g);
   }
 
@@ -252,7 +254,7 @@ export function createProductScene(container, opts = {}) {
       ['E_neg', 55, 25],
     ];
     termDefs.forEach(([id, x, z]) => {
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 4, 8, 16), matTerminal);
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 4, 8, 16), matTerminal.clone());
       post.position.set(x, 12, z);
       post.userData.terminalId = id;
       post.castShadow = true;
@@ -338,15 +340,16 @@ export function createProductScene(container, opts = {}) {
   desk.position.y = -4; desk.receiveShadow = true;
   scene.add(desk);
 
-  // ===== FOV frustum helper (F4 fix: rectangular pinhole frustum, not cone) =====
+  // ===== FOV frustum helper (correct: lens world y=214, board y=8, h=206mm) =====
   let fovCone = null;
   {
-    // Lens at y=235, board at y=8, h=227mm
-    // HFOV=60° → half-width X = 227*tan(30°) = 131.05mm
-    // VFOV=45° → half-depth Z = 227*tan(22.5°) = 94.08mm
-    const h = 227;
-    const hw = h * Math.tan(Math.PI / 6);   // 131.05
-    const hd = h * Math.tan(Math.PI / 8);   // 94.08
+    // Lens world Y = head_home(235) + lens_local_y(-21) = 214mm
+    // Board plane Y = 8mm, effective distance h = 206mm
+    // HFOV=60° → half-width X = 206*tan(30°) = 118.94mm
+    // VFOV=45° → half-depth Z = 206*tan(22.5°) = 85.33mm
+    const h = 206;
+    const hw = h * Math.tan(Math.PI / 6);   // 118.94
+    const hd = h * Math.tan(Math.PI / 8);   // 85.33
     const topHW = 6, topHD = 4; // lens opening
     const verts = new Float32Array([
       // top (lens, y=0 local)
@@ -370,9 +373,12 @@ export function createProductScene(container, opts = {}) {
     fovCone = new THREE.Mesh(geom, mat);
     fovCone.name = 'fovCone';
     fovCone.userData.isHelper = true;
-    fovCone.position.set(0, 235, 0);
+    // Attach to sensor head so frustum rotates with lens focus
+    // Lens at local y=-21, frustum extends downward from lens
+    fovCone.position.set(0, -21, 0);
+    fovCone.rotation.set(0, 0, 0);
     fovCone.visible = false;
-    scene.add(fovCone);
+    sensorHead.add(fovCone);
   }
 
   // ===== Screen drawing =====
@@ -470,7 +476,7 @@ export function createProductScene(container, opts = {}) {
       label.material.map.needsUpdate = true;
     });
 
-    // Occluded terminals → red overlay
+    // Occluded terminals → red overlay (per-terminal material, no bleed)
     const occluded = s.observation?.occludedTerminals || s.observation?.occludedIds || [];
     occluded.forEach(tid => {
       if (terminals[tid]) {
@@ -479,6 +485,17 @@ export function createProductScene(container, opts = {}) {
       }
     });
 
+    // Wire show/hide based on s.wires state
+    if (s.wires) {
+      wireMeshes.forEach(w => {
+        const key = [w.userData.wireA, w.userData.wireB].sort().join('-');
+        const exists = s.wires.some(wr => [...wr].sort().join('-') === key);
+        w.visible = exists;
+      });
+    }
+
+    // Sensor head: lens local forward = (0,-1,0), align to target
+    const localForward = new THREE.Vector3(0, -1, 0);
     if (s.probes?.a) {
       ['a','b'].forEach(k => {
         const tid = s.probes[k];
@@ -487,16 +504,20 @@ export function createProductScene(container, opts = {}) {
       const target = terminals[s.probes.b] || terminals[s.probes.a];
       if (target) {
         const tp = new THREE.Vector3(); target.getWorldPosition(tp);
-        sensorHead.lookAt(tp);
+        const hp = new THREE.Vector3(); sensorHead.getWorldPosition(hp);
+        const dir = tp.clone().sub(hp).normalize();
+        sensorHead.quaternion.setFromUnitVectors(localForward, dir);
       }
     } else if (s.teacherPrompt?.focus) {
       const tid = s.teacherPrompt.focus;
       if (terminals[tid]) {
         const tp = new THREE.Vector3(); terminals[tid].getWorldPosition(tp);
-        sensorHead.lookAt(tp);
+        const hp = new THREE.Vector3(); sensorHead.getWorldPosition(hp);
+        const dir = tp.clone().sub(hp).normalize();
+        sensorHead.quaternion.setFromUnitVectors(localForward, dir);
       }
     } else {
-      sensorHead.rotation.set(0, 0, 0);
+      sensorHead.quaternion.identity();
     }
   }
 

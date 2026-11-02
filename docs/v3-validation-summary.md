@@ -12,18 +12,18 @@
 ## 实测通过
 
 ### Lab engine（纯逻辑）
-- `node public/v3/lab/test.js` → **14/14 passed**。
-- 覆盖：NG/PG/current 区分、fake claim 拒绝、500/1000Ω 比例任务、12V 错误预测反馈、observation unknown 阻塞、restore nominal 与 ratio current config 的预测参考。
+- `node public/v3/lab/test.js` → 当前 15 项自测，独立复核 13 项范围（reset 第 12 项 harness 待修，源码无错）。
+- 覆盖：NG/PG/current 区分、fake claim 拒绝、500/1000Ω 比例任务、12V 错误预测反馈、observation unknown 阻塞、restore 根因主张与 compare 记录、遮挡 manual 确认来源可追。
 
 ### 3D 场景（Three.js r160 ESM + WebGL）
 - 桌面 1440×900 视口 canvas 861×360；移动 390×844 视口 canvas 356×360，WebGL2 真实上下文（软件 SwiftShader）。
 - 12 个 GLB（B01–B11 + bridge_whole）GLTFLoader 加载，米制，center 0。
-- 整机 bbox 371.5×287×209.5mm；镜头 home (0, 235, 0)mm，板中心 (0, 8, -10)mm；HFOV60/VFOV45 半 footprint 131.05×94.08mm。
+- 整机 bbox 371.5×287×209.5mm；镜头 home (0, 214, 0)mm，板中心 (0, 8, -10)mm；HFOV60/VFOV45 半 footprint 118.93×85.33mm。
 - 单零件隔离 / 爆炸视图 / 模型查看 / FOV 锥 / GLB 导出（Blob 下载）。
 - 3D 端子 raycast ↔ 原理图 SVG 双向同步；390px 触摸目标可达。
 - LED 状态：initial 灰 / predict & NG 琥珀 / PG 绿 / claim 青 / intervention 蓝 / review 绿。
 - pause/resume：暂停时禁实验编辑，Orbit 相机可观察。
-- 动态下载 `bridge_whole.glb` 853956b 与静态文件逐字节一致；回读 bbox/center 一致；`B05.glb` 下载回读通过。
+- 静态 `bridge_whole.glb` 853956b 与 `B05.glb` 60828b；focus 后动态导出 whole 852488b，回读几何尺寸 371.5×287×209.5mm 与中性姿态与静态模型一致，无运行辅助；非逐字节相同。
 
 ### UI 教学流
 - 自由探索：预测错误（如 12V）收到物理边界反馈，预测留历史须修正。

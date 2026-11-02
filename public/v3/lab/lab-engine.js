@@ -54,12 +54,13 @@ export function createLab({task,scenarioId}={}){
   let evidence=[], staleEvidence=[], mappingResponses=[], hypothesisComparison=null;
   let hints=[], interventions=[], studentResponses=[];
   let claim=null, claimValidation=null, teacherReview=null;
+  let preCorrectionComparison=null;
   let observation={mode:'unknown',occludedTerminals:[],confidence:0,manualConfirmed:false};
 
   const topo=()=>deriveTopo(wires);
   const f=()=>uf(wires);
   const netOf=t=>netAt(t,f());
-  const invalidate=()=>{ staleEvidence.push(...evidence); evidence=[]; lastMeasurement=null; claim=null; claimValidation=null; teacherReview=null; if(phase!=='orientation') phase='exploration'; revision++; };
+  const invalidate=()=>{ staleEvidence.push(...evidence); evidence=[]; lastMeasurement=null; claim=null; claimValidation=null; teacherReview=null; if(hypothesisComparison&&!preCorrectionComparison) preCorrectionComparison=hypothesisComparison; hypothesisComparison=null; if(phase!=='orientation') phase='exploration'; revision++; };
 
   const displayConfig=()=> task==='restore_nominal'
     ? {E:5,R1:'待测',R2:'待测'}
@@ -130,6 +131,7 @@ export function createLab({task,scenarioId}={}){
       let fb=[];
       if(Math.abs(u2-idealU)>0.3) fb.push(`u2偏离参考${idealU.toFixed(3)}V`);
       if(Math.abs(iMa-idealI)>0.3) fb.push(`iMa偏离参考${idealI.toFixed(3)}mA`);
+      if(Math.abs(pMw-idealP)>0.5) fb.push(`pMw偏离参考${idealP.toFixed(3)}mW`);
       prediction={u2,iMa,pMw,revision,referenceConfig:{E:ref.E,R1:ref.R1,R2:ref.R2}};
       predictionHistory.push(prediction); predictionFeedback=fb.join(';')||null;
       phase='exploration'; return ret(true);
@@ -155,6 +157,8 @@ export function createLab({task,scenarioId}={}){
       if(!(canStudent()&&inExp())) return ret(false,'forbidden');
       if(!probes) return ret(false,'no_probes');
       if(observation.mode==='unknown'&&!observation.manualConfirmed) return ret(false,'observation_unknown');
+      const occluded=[probes.a,probes.b].filter(t=>observation.occludedTerminals.includes(t));
+      if(occluded.length>0&&!observation.manualConfirmed) return ret(false,'terminal_occluded');
       const t=topo();
       if(t!=='series') return ret(false,'topo_'+t);
       let value,unit;
@@ -168,7 +172,9 @@ export function createLab({task,scenarioId}={}){
         const vb=nb==='P'?actual.E:nb==='G'?0:actual.E*actual.R2/(actual.R1+actual.R2);
         value=va-vb; unit='V';
       }
-      const e={id:++evId,a:probes.a,b:probes.b,mode:probes.mode,value,unit,revision,usable:true};
+      const e={id:++evId,a:probes.a,b:probes.b,mode:probes.mode,value,unit,revision,usable:true,
+        source:observation.manualConfirmed?'manual_confirmed':'simulated_observation',
+        observationMode:observation.mode};
       evidence.push(e); lastMeasurement=e; return ret(true,null,{evidence:e});
     },
 
@@ -201,18 +207,23 @@ export function createLab({task,scenarioId}={}){
       if(!m||!readings) return ret(false,'bad_compare');
       if(!TERMINALS.includes(m.a)||!TERMINALS.includes(m.b)) return ret(false,'bad_terminal');
       if(!['voltage','current'].includes(m.mode)) return ret(false,'bad_mode');
+      if(m.mode==='current'&&!((m.a==='R1_b'&&m.b==='R2_a')||(m.a==='R2_a'&&m.b==='R1_b'))) return ret(false,'current_only_series_gap');
+      if(!['different_predictions','check_source','check_current','check_segment','repeat_confirm'].includes(reasonCode)) return ret(false,'bad_reasonCode');
       const aReal=expectedReading('A',m.a,m.b,m.mode);
       const bReal=expectedReading('B',m.a,m.b,m.mode);
       if(!isNum(readings.A)||!isNum(readings.B)) return ret(false,'bad_readings');
       if(Math.abs(readings.A-aReal)>0.05||Math.abs(readings.B-bReal)>0.05) return ret(false,'bad_prediction_values');
       if(Math.abs(aReal-bReal)<0.01) return ret(false,'not_discriminating');
-      hypothesisComparison={m,readings,reasonCode}; return ret(true);
+      hypothesisComparison={m,readings,reasonCode,revision}; return ret(true);
     },
 
     requestHint(){
       if(!(canStudent()&&inExp())) return ret(false,'forbidden');
       const lv=Math.min(hints.length+1,3);
-      hints.push({level:lv,text:['先选测点','比较候选读数','用欧姆定律推算'][lv-1]});
+      const texts = task==='restore_nominal'
+        ? ['P/N/G各对应哪个端子？','两候选在选测点的预期读数差多少？','用欧姆定律推算电流']
+        : ['目标分压比k=R2/(R1+R2)=?','基线与新方案电流为何不同？','总功率E·I如何变化？'];
+      hints.push({level:lv,text:texts[lv-1]});
       return ret(true);
     },
 
@@ -220,14 +231,18 @@ export function createLab({task,scenarioId}={}){
       if(!(canStudent()&&inExp())) return ret(false,'forbidden');
       if(goalType!==task) return ret(false,'goal_mismatch');
       if(!claimCode||!evidenceIds||!comparison) return ret(false,'missing_structure');
+      if(!['cause_A','cause_B','ratio_2_3'].includes(claimCode)) return ret(false,'bad_claimCode');
+      if(task==='ratio_design'&&claimCode!=='ratio_2_3') return ret(false,'goal_mismatch');
       const evs=evidence.filter(e=>evidenceIds.includes(e.id));
       if(evs.length!==evidenceIds.length) return ret(false,'bad_evidence_id');
       if(!evs.some(e=>e.mode==='voltage'&&((e.a==='R1_b'&&e.b==='E_neg')||(e.a==='E_neg'&&e.b==='R1_b')))) return ret(false,'need_NG_voltage');
       if(!evs.some(e=>e.mode==='current'&&((e.a==='R1_b'&&e.b==='R2_a')||(e.a==='R2_a'&&e.b==='R1_b')))) return ret(false,'need_series_current');
-      // prediction revision check: must have revised after wrong prediction
+      if(task==='restore_nominal' && !hypothesisComparison && !preCorrectionComparison) return ret(false,'need_hypothesis_comparison');
       if(predictionHistory.length>0 && predictionFeedback){
         const last=predictionHistory[predictionHistory.length-1];
-        if(Math.abs(last.u2 - 3.333)>0.3) return ret(false,'prediction_not_revised');
+        const ref=last.referenceConfig||FIXTURES.nominal;
+        const idealU=ref.E*ref.R2/(ref.R1+ref.R2), idealI=ref.E/(ref.R1+ref.R2)*1000, idealP=ref.E*idealI;
+        if(Math.abs(last.u2-idealU)>0.3||Math.abs(last.iMa-idealI)>0.3||Math.abs(last.pMw-idealP)>0.5) return ret(false,'prediction_not_revised');
       }
       if(task==='restore_nominal'){
         const okR1=Math.abs(actual.R1-FIXTURES.nominal.R1)/FIXTURES.nominal.R1<=TOL;
@@ -237,12 +252,30 @@ export function createLab({task,scenarioId}={}){
         if(!excludedCandidateIds||excludedCandidateIds.length!==1||!['A','B'].includes(excludedCandidateIds[0]))
           return ret(false,'need_causal_exclusion');
         const excl=excludedCandidateIds[0];
-        const diagEvs = staleEvidence.filter(e=>e.revision<evidence[0]?.revision ?? revision);
+        const hc=preCorrectionComparison||hypothesisComparison;
+        if(!hc) return ret(false,'need_hypothesis_comparison');
+        const diagEvs = staleEvidence.filter(e=>e.revision<=hc.revision);
         if(diagEvs.length===0) return ret(false,'need_diagnostic_evidence');
         const diagCompat = ['A','B'].map(id=>({id,ok:diagEvs.every(e=>Math.abs(e.value-expectedReading(id,e.a,e.b,e.mode))<0.05)}));
         const survivor = diagCompat.find(c=>c.ok && c.id!==excl);
         const exclOk = diagCompat.find(c=>c.id===excl && !c.ok);
         if(!survivor||!exclOk) return ret(false,'exclusion_relation_invalid');
+        const expectedCode = survivor.id==='A'?'cause_A':'cause_B';
+        if(claimCode!==expectedCode) return ret(false,'claimCode_mismatch_survivor');
+        // comparison four values: before from survivor candidate, after from nominal
+        const sc=FIXTURES[survivor.id];
+        const iBefore=sc.E/(sc.R1+sc.R2)*1000, pBefore=sc.E*iBefore;
+        const iAfter=actual.E/(actual.R1+actual.R2)*1000;
+        const pAfter=actual.E*iAfter;
+        if(!isNum(comparison.iBeforeMa)||Math.abs(comparison.iBeforeMa-iBefore)>0.1) return ret(false,'bad_comparison_base');
+        if(!isNum(comparison.pBeforeMw)||Math.abs(comparison.pBeforeMw-pBefore)>0.5) return ret(false,'bad_comparison_base');
+        if(!isNum(comparison.iAfterMa)||Math.abs(comparison.iAfterMa-iAfter)>0.05) return ret(false,'bad_comparison');
+        if(!isNum(comparison.pAfterMw)||Math.abs(comparison.pAfterMw-pAfter)>0.3) return ret(false,'bad_comparison_p');
+        // bind hypothesisComparison to diagnostic evidence same pair/mode/revision
+        const diagMatch=diagEvs.find(e=>
+          e.revision===hc.revision && e.mode===hc.m.mode &&
+          ((e.a===hc.m.a&&e.b===hc.m.b)||(e.a===hc.m.b&&e.b===hc.m.a)));
+        if(!diagMatch) return ret(false,'compare_not_binding_evidence');
       }
       if(task==='ratio_design'){
         const k=actual.R2/(actual.R1+actual.R2);
@@ -292,7 +325,7 @@ export function createLab({task,scenarioId}={}){
       phase='orientation'; paused=false; prediction=null; predictionHistory=[]; predictionFeedback=null;
       probes=null; lastMeasurement=null; evidence=[]; staleEvidence=[];
       mappingResponses=[]; hypothesisComparison=null; hints=[]; interventions=[];
-      studentResponses=[]; claim=null; claimValidation=null; teacherReview=null;
+      studentResponses=[]; claim=null; claimValidation=null; teacherReview=null; preCorrectionComparison=null;
       observation={mode:'unknown',occludedTerminals:[],confidence:0,manualConfirmed:false};
       revision=0; evId=0; return ret(true);
     },

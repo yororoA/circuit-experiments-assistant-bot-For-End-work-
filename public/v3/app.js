@@ -38,8 +38,40 @@ function buildTerminalOptions(select) {
   });
 }
 
+const ERROR_ZH = {
+  wrong_input: '输入无效，请检查数值',
+  observation_unknown: '观测状态为"未知"，请先设为"可见"并手动确认端子映射',
+  observation_occluded: '该端子被遮挡，请在"模拟观测控制"中取消遮挡或改测其他端子',
+  terminal_occluded: '该端子被遮挡，无法测量',
+  not_predicted: '请先提交预测再测量',
+  invalid_probe_pair: '端子对无效，请选择正确的测量点',
+  current_requires_gap: '电流测量需串联在 R1_b–R2_a 间隙',
+  current_only_series_gap: '电流测量仅限 R1_b–R2_a 串联间隙',
+  no_wire: '该端子对未连接',
+  wire_already: '该端子对已连接',
+  invalid_wire: '连线无效，同一端子不能自连',
+  topo_open: '电路拓扑断开（端子间无通路），请恢复接线后测量',
+  goal_not_restored: '尚未恢复标称配置（E=5V, R1=1kΩ, R2=2kΩ 串联）',
+  wrong_pMw: '功率数据不对，请核对电流与电压',
+  need_evidence: '缺少有效测量证据',
+  need_compare: '请先记录假设对比',
+  need_hypothesis_comparison: '请先记录假设对比再提交主张',
+  need_mapping: '请先完成端子映射',
+  empty_comment: '评语不能为空',
+  claim_code_missing: '请选择主张根因',
+  claimCode_mismatch_survivor: '主张根因与排除候选不一致：排除 B 则主张应为 A，排除 A 则主张应为 B',
+  exclude_missing: '请选择要排除的候选',
+  bad_number: '数值格式错误',
+  bad_compare: '对比数据不完整',
+  bad_comparison_base: '对比测量基线无效，请先测量有效电压/电流',
+  bad_reasonCode: '理由代码无效',
+  bad_terminal: '端子编号无效',
+  bad_mode: '测量模式无效',
+  forbidden: '当前阶段不允许此操作',
+};
 function showInline(el, err) {
-  el.textContent = `${err.code || 'error'}: ${err.message || JSON.stringify(err)}`;
+  const code = typeof err === 'string' ? err : (err?.code || 'error');
+  el.textContent = `${ERROR_ZH[code] || code}${(err && typeof err === 'object' && err.message) ? '：' + err.message : ''}`;
   el.hidden = false;
 }
 function toast(msg) {
@@ -152,6 +184,27 @@ function bindEvents() {
     if (!r.ok) { showInline($('cmp-error'), r.error); return; }
     $('cmp-error').hidden = true;
     $('cmp-result').textContent = '已记录假设对比';
+    render();
+  });
+
+  const DEFAULT_WIRES = [
+    { pair: ['E_pos', 'R1_a'], sel: 'wire-1' },
+    { pair: ['R1_b', 'R2_a'], sel: 'wire-2' },
+    { pair: ['R2_b', 'E_neg'], sel: 'wire-3' },
+  ];
+  $('btn-wire-apply').addEventListener('click', () => {
+    let lastErr = null;
+    window.__wireLog = [];
+    try {
+      for (const w of DEFAULT_WIRES) {
+        const connected = $(w.sel).value === '1';
+        const r = state.lab.setWire({ a: w.pair[0], b: w.pair[1], connected });
+        window.__wireLog.push({pair: w.pair, connected, ok: r.ok, err: r.error});
+        if (!r.ok) { lastErr = r.error; break; }
+      }
+    } catch(e) { window.__wireLog.push({exception: e.message}); }
+    if (lastErr) { showInline($('wire-error'), lastErr); return; }
+    $('wire-error').hidden = true;
     render();
   });
 
@@ -311,23 +364,41 @@ function render() {
   document.querySelectorAll('.obs-occlude').forEach(cb => {
     cb.checked = s.observation.occludedTerminals?.includes(cb.value);
   });
+  // sync wire selectors (wires is array of [a,b] pairs)
+  const wireSet = new Set((s.wires || []).map(w => w[0] + '|' + w[1]));
+  const pairKey = (a, b) => a + '|' + b;
+  const invKey = (a, b) => b + '|' + a;
+  const isConn = (a, b) => wireSet.has(pairKey(a,b)) || wireSet.has(invKey(a,b));
+  if ($('wire-1')) $('wire-1').value = isConn('E_pos','R1_a') ? '1' : '0';
+  if ($('wire-2')) $('wire-2').value = isConn('R1_b','R2_a') ? '1' : '0';
+  if ($('wire-3')) $('wire-3').value = isConn('R2_b','E_neg') ? '1' : '0';
+  // SVG wire visual sync: disconnected = dashed/gray
+  const svgWire = (id, conn) => {
+    const el = document.getElementById(id); if (!el) return;
+    el.style.stroke = conn ? '#3a3a3a' : '#bbb';
+    el.style.strokeDasharray = conn ? '' : '4 3';
+  };
+  svgWire('#svg-wire-1', isConn('E_pos','R1_a'));
+  svgWire('#svg-wire-2', isConn('R1_b','R2_a'));
+  svgWire('#svg-wire-3', isConn('R2_b','E_neg'));
 
   // evidence
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   $('evidence-list').innerHTML = s.evidence.map(e =>
-    `<div class="evidence-item">证据 ${e.id} · ${TERMINAL_ZH[e.a]||e.a}-${TERMINAL_ZH[e.b]||e.b}（${e.mode}）：${e.value.toFixed(3)} ${e.unit}</div>`
+    `<div class="evidence-item">证据 ${esc(e.id)} · ${esc(TERMINAL_ZH[e.a]||e.a)}-${esc(TERMINAL_ZH[e.b]||e.b)}（${esc(e.mode)}）：${e.value.toFixed(3)} ${esc(e.unit)}</div>`
   ).join('');
   $('stale-evidence').innerHTML = s.staleEvidence.map(e =>
-    `<div class="evidence-item stale">证据 ${e.id}（已过期）· ${TERMINAL_ZH[e.a]||e.a}-${TERMINAL_ZH[e.b]||e.b}: ${e.value?.toFixed(3) || '—'}</div>`
+    `<div class="evidence-item stale">证据 ${esc(e.id)}（已过期）· ${esc(TERMINAL_ZH[e.a]||e.a)}-${esc(TERMINAL_ZH[e.b]||e.b)}: ${e.value?.toFixed(3) || '—'}</div>`
   ).join('');
 
   // claim evidence summary
   $('claim-evidence-summary').innerHTML =
-    '<div class="evidence-item">当前有效：' + (s.evidence.map(e => e.id).join(', ') || '无') + '</div>' +
-    '<div class="evidence-item stale">已过期：' + (s.staleEvidence.map(e => e.id).join(', ') || '无') + '</div>';
+    '<div class="evidence-item">当前有效：' + esc(s.evidence.map(e => e.id).join(', ') || '无') + '</div>' +
+    '<div class="evidence-item stale">已过期：' + esc(s.staleEvidence.map(e => e.id).join(', ') || '无') + '</div>';
 
   // candidates
   $('candidate-list').innerHTML = s.candidates.map(c =>
-    `<div class="candidate-item ${c.compatible ? 'open' : 'excluded'}">候选 ${c.id}：${c.desc} — ${c.compatible ? '仍兼容' : '已排除'}</div>`
+    `<div class="candidate-item ${c.compatible ? 'open' : 'excluded'}">候选 ${esc(c.id)}：${esc(c.desc)} — ${c.compatible ? '仍兼容' : '已排除'}</div>`
   ).join('') || '<div class="evidence-item">非恢复标称任务，无候选假设</div>';
 
   // teacher
@@ -335,7 +406,7 @@ function render() {
   $('respond-card').classList.toggle('hidden', s.role !== 'student' || !s.interventions?.length);
   $('teacher-evidence').textContent = `学生证据 ${s.evidence.length} 条；主张：${s.claim?.claimCode || '未提交'}`;
   $('teacher-responses').innerHTML = s.studentResponses.map(r =>
-    `<div class="evidence-item">对干预 ${r.interventionId}：${r.freeText || JSON.stringify(r.mapping || r.comparison || {})}</div>`
+    `<div class="evidence-item">对干预 ${esc(r.interventionId)}：${esc(r.freeText || JSON.stringify(r.mapping || r.comparison || {}))}</div>`
   ).join('') || '<div class="evidence-item">尚无学生回应</div>';
 
   // buttons
