@@ -504,6 +504,7 @@ export function createProductScene(container, opts = {}) {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let modelMode = false;
+  let currentPartId = null;
   renderer.domElement.addEventListener('click', (e) => {
     if (modelMode) return;
     const rect = renderer.domElement.getBoundingClientRect();
@@ -518,15 +519,21 @@ export function createProductScene(container, opts = {}) {
 
   // ===== Camera fit =====
   function fitView() {
-    const box = new THREE.Box3().setFromObject(robot);
+    const box = new THREE.Box3();
+    if (modelMode && currentPartId) {
+      box.setFromObject(parts[currentPartId].group);
+    } else {
+      box.setFromObject(robot);
+    }
+    if (box.isEmpty()) return;
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
-    const dist = maxDim / (2 * Math.tan(Math.PI / 9)) * 1.5; // 40° FOV, 1.5x margin
+    const dist = maxDim / (2 * Math.tan(Math.PI / 9)) * 1.6;
     controls.target.copy(center);
     camera.position.set(center.x - dist * 0.55, center.y + dist * 0.35, center.z + dist * 0.65);
     camera.near = 1;
-    camera.far = dist * 5;
+    camera.far = dist * 10;
     camera.updateProjectionMatrix();
     controls.update();
   }
@@ -534,9 +541,9 @@ export function createProductScene(container, opts = {}) {
   // ===== Explosion =====
   let explodeTarget = 0, explodeCurrent = 0;
   const explodeDirs = {
-    B01: [0, -20, 0], B02: [-70, 0, 0], B03: [70, 0, 0], B04: [0, 50, 0],
-    B05: [0, 30, -40], B06: [0, 70, 0], B07: [120, 0, 0], B08: [120, -20, 0],
-    B09: [0, -30, 0], B10: [-120, 0, 0], B11: [0, -50, 0],
+    B01: [0, 10, 0], B02: [-70, 0, 0], B03: [70, 0, 0], B04: [0, 60, 0],
+    B05: [0, 40, -50], B06: [0, 90, 0], B07: [130, 20, 0], B08: [130, -10, 0],
+    B09: [0, 50, 0], B10: [-130, 20, 0], B11: [0, 70, 0],
   };
   function updateExplode() {
     explodeCurrent += (explodeTarget - explodeCurrent) * 0.08;
@@ -544,6 +551,10 @@ export function createProductScene(container, opts = {}) {
       const d = explodeDirs[id] || [0,0,0];
       p.group.position.set(p.homePos.x + d[0]*explodeCurrent, p.homePos.y + d[1]*explodeCurrent, p.homePos.z + d[2]*explodeCurrent);
     });
+    // Hide desk and labels when exploded
+    const isExploding = explodeCurrent > 0.1;
+    desk.visible = !isExploding && !modelMode;
+    Object.values(terminalLabels).forEach(l => l.visible = !isExploding && !modelMode);
   }
 
   // ===== Export GLB =====
@@ -643,12 +654,20 @@ export function createProductScene(container, opts = {}) {
     },
     setObservationCone(on) { fovCone.visible = on; },
     setPartMode(id) {
-      Object.values(parts).forEach(p => p.group.visible = !id || p.id === id);
+      currentPartId = id;
       modelMode = !!id;
-      if (!id) Object.values(parts).forEach(p => p.group.visible = true);
+      Object.entries(parts).forEach(([pid, p]) => {
+        p.group.visible = !id || pid === id;
+      });
+      desk.visible = !id;
+      fovCone.visible = false;
+      Object.values(terminalLabels).forEach(l => l.visible = !id);
       fitView();
     },
-    setExploded(v) { explodeTarget = v; },
+    setExploded(v) {
+      explodeTarget = v;
+      setTimeout(fitView, 1500);
+    },
     exportGLB,
     getDiagnostics,
     resize, start,
