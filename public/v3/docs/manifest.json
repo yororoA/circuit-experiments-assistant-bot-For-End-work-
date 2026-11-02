@@ -1,0 +1,31 @@
+{
+  "product": "CircuitBridge · 循证观察桥",
+  "version": "v3.1.1",
+  "contract": "v3-integration-contract.md 1.0",
+  "units_nominal": "mm",
+  "units_glb": "meters",
+  "whole_bbox_mm_loader_verified": [371.5, 287, 209.5],
+  "note": "Whole bbox is robot parts only (no desk/FOV/probes). Live scene bbox includes desk=539×343×210.",
+  "scale_conversion": "meter root group scale 0.001, child in mm space centered at origin",
+  "glb_count": 12,
+  "parts": [
+    { "id": "B01", "name": "后底座", "bbox_mm_loader": [216, 34, 66], "install": "后置圆角基座 z=110" },
+    { "id": "B02", "name": "左立柱", "bbox_mm_loader": [24, 234, 26], "install": "x=-95, z=110" },
+    { "id": "B03", "name": "右立柱", "bbox_mm_loader": [24, 234, 26], "install": "x=+95, z=110" },
+    { "id": "B04", "name": "后横梁", "bbox_mm_loader": [214, 32, 28], "install": "y=268, z=110" },
+    { "id": "B05", "name": "传感横臂", "bbox_mm_loader": [18, 18, 104], "install": "连续支撑，后梁至传感头 z=0..100" },
+    { "id": "B06", "name": "传感头舱", "bbox_mm_loader": [61, 46, 48], "install": "home (0,235,0), 俯视镜头可见" },
+    { "id": "B07", "name": "证据屏", "bbox_mm_loader": [134, 102, 36], "install": "右侧 x=140, 面向学生操作侧" },
+    { "id": "B08", "name": "状态光带", "bbox_mm_loader": [100, 4, 3], "install": "屏边嵌入式" },
+    { "id": "B09", "name": "面包板", "bbox_mm_loader": [173, 17.5, 113], "install": "操作面, 6端子+R1/R2电阻+插孔阵列" },
+    { "id": "B10", "name": "电源模块", "bbox_mm_loader": [49, 54, 39], "install": "左侧 x=-140" },
+    { "id": "B11", "name": "接线", "bbox_mm_loader": [110.4, 4.4, 52.4], "install": "3根彩色patch wire" }
+  ],
+  "terminals": ["E_pos", "R1_a", "R1_b", "R2_a", "R2_b", "E_neg"],
+  "default_wires": [["E_pos","R1_a"],["R1_b","R2_a"],["R2_b","E_neg"]],
+  "lens_home": [0, 235, 0],
+  "board_center": [0, 8, -10],
+  "h_fov_deg": 60,
+  "v_fov_deg": 45,
+  "note": "Concept digital prototype. Rounded extruded geometry. FOV cone runtime-only, not in GLB export. Screen faces operator side (z<0). All GLB centers at [0,0,0]m verified by GLTFLoader."
+}
