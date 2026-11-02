@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CircuitBridge — 桥式实验伴学器</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path d="M3 12h4l3-8 4 16 3-8h4" fill="none" stroke="#00838f" stroke-width="2" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="brand-name">CircuitBridge</div>
+      <div class="brand-sub">桥式实验伴学器 · 数字概念原型</div>
+    </div>
+  </div>
+  <nav class="task-tabs" id="task-tabs">
+    <button class="task-tab active" data-task="restore_nominal" type="button">恢复标称</button>
+    <button class="task-tab" data-task="ratio_design" type="button">比值设计</button>
+  </nav>
+  <div class="top-right">
+    <label class="toggle"><input type="checkbox" id="flat-toggle"><span>平面对照</span></label>
+    <div class="role-switch" id="role-switch">
+      <button class="role-btn active" data-role="student" type="button">学生</button>
+      <button class="role-btn" data-role="teacher" type="button">教师</button>
+    </div>
+  </div>
+</header>
+
+<!-- 任务目标条（一句目标 + 当前进度，不用百分比） -->
+<div class="task-strip" id="task-strip">
+  <div class="task-goal" id="task-goal">—</div>
+  <div class="task-progress" id="task-progress">尚未开始</div>
+</div>
+
+<main class="layout">
+  <!-- 左：实验台主区 -->
+  <section class="lab">
+    <div class="scene-wrap">
+      <div class="scene-container" id="scene-container">
+        <div class="scene-placeholder" id="scene-placeholder">
+          <div class="ph-title">3D 实验台加载中</div>
+          <div class="ph-sub">等待 scene 模块接入</div>
+        </div>
+      </div>
+      <div class="meter">
+        <div class="meter-head">
+          <span class="meter-label">直流测量</span>
+          <span class="meter-mode" id="meter-mode">voltage</span>
+        </div>
+        <div class="meter-readout" id="meter-readout">--.--</div>
+        <div class="meter-sub" id="meter-sub">先预测再测量</div>
+      </div>
+    </div>
+
+    <!-- 模型查看工具（折叠） -->
+    <details class="model-tools">
+      <summary>模型查看</summary>
+      <div class="model-tools-body">
+        <div class="row">
+          <label>零件<select id="mdl-part">
+            <option value="">整机</option>
+            <option value="B01">B01 后底座</option>
+            <option value="B02">B02 左立柱</option>
+            <option value="B03">B03 右立柱</option>
+            <option value="B04">B04 后横梁</option>
+            <option value="B05">B05 前板/端子</option>
+            <option value="B06">B06 光源环</option>
+            <option value="B07">B07 横梁灯条</option>
+            <option value="B08">B08 灯条</option>
+            <option value="B09">B09 探头 P</option>
+            <option value="B10">B10 探头 N</option>
+            <option value="B11">B11 探头 G</option>
+          </select></label>
+          <label>视角<select id="mdl-view">
+            <option value="">斜角</option>
+            <option value="front">正面</option>
+            <option value="side">侧面</option>
+            <option value="top">俯视</option>
+          </select></label>
+        </div>
+        <div class="row">
+          <label>爆炸<select id="mdl-explode">
+            <option value="0">关闭</option>
+            <option value="1">开启</option>
+          </select></label>
+          <label><input type="checkbox" id="mdl-fov"> 观察视场锥</label>
+          <button class="btn" id="btn-export-glb" type="button">导出当前 GLB</button>
+        </div>
+        <div id="export-status"></div>
+      </div>
+    </details>
+
+    <!-- 原理图（6 实体 terminal） -->
+    <div class="schematic">
+      <h3>原理图 · 端子映射</h3>
+      <svg id="circuit-svg" viewBox="0 0 360 260" role="img" aria-label="分压电路原理图">
+        <line class="wire" x1="60" y1="40" x2="180" y2="40"/>
+        <line class="wire" x1="180" y1="110" x2="180" y2="170"/>
+        <line class="wire" x1="180" y1="220" x2="60" y2="220"/>
+        <line class="wire" x1="60" y1="40" x2="60" y2="220"/>
+        <circle cx="60" cy="130" r="14" fill="#faf6ee" stroke="#3a3a3a" stroke-width="2"/>
+        <text x="60" y="134" text-anchor="middle" font-size="11">E</text>
+        <rect x="170" y="55" width="20" height="50" fill="#faf6ee" stroke="#3a3a3a" stroke-width="2"/>
+        <text x="200" y="85" font-size="11">R1</text>
+        <rect x="170" y="175" width="20" height="45" fill="#faf6ee" stroke="#3a3a3a" stroke-width="2"/>
+        <text x="200" y="200" font-size="11">R2</text>
+        <g class="terminal" data-terminal="E_pos" tabindex="0"><circle cx="60" cy="40" r="9" fill="#fff" stroke="#00838f" stroke-width="2.5"/><text x="38" y="36" font-size="10">E+</text></g>
+        <g class="terminal" data-terminal="R1_a" tabindex="0"><circle cx="180" cy="40" r="9" fill="#fff" stroke="#3a3a3a" stroke-width="2.5"/><text x="190" y="36" font-size="10">R1a</text></g>
+        <g class="terminal" data-terminal="R1_b" tabindex="0"><circle cx="180" cy="110" r="9" fill="#fff" stroke="#3a3a3a" stroke-width="2.5"/><text x="190" y="114" font-size="10">R1b</text></g>
+        <g class="terminal" data-terminal="R2_a" tabindex="0"><circle cx="180" cy="170" r="9" fill="#fff" stroke="#3a3a3a" stroke-width="2.5"/><text x="190" y="166" font-size="10">R2a</text></g>
+        <g class="terminal" data-terminal="R2_b" tabindex="0"><circle cx="180" cy="220" r="9" fill="#fff" stroke="#3a3a3a" stroke-width="2.5"/><text x="190" y="234" font-size="10">R2b</text></g>
+        <g class="terminal" data-terminal="E_neg" tabindex="0"><circle cx="60" cy="220" r="9" fill="#fff" stroke="#3a3a3a" stroke-width="2.5"/><text x="38" y="234" font-size="10">E−</text></g>
+        <circle id="probe-a-ind" class="probe-ind probe-a" opacity="0" r="13"/>
+        <circle id="probe-b-ind" class="probe-ind probe-b" opacity="0" r="13"/>
+      </svg>
+      <p class="svg-hint">点击端子放置当前探针（A 青绿 / B 橙）；或用下拉框等价操作</p>
+    </div>
+  </section>
+
+  <!-- 右：工作台（按阶段展开） -->
+  <aside class="workbench">
+    <div class="phase-banner" id="phase-banner">orientation</div>
+
+    <!-- 4 阶段 accordion（中文任务路径） -->
+    <div class="accordion">
+      <details class="acc" open>
+        <summary>目标与预测</summary>
+        <div class="acc-body">
+          <div class="row">
+            <label>中点电压 U_NG (V)<input type="number" id="predict-u2" step="0.001" min="0" max="12"></label>
+            <label>电流 I (mA)<input type="number" id="predict-i" step="0.001"></label>
+            <label>总功率 P (mW)<input type="number" id="predict-p" step="0.001"></label>
+          </div>
+          <button class="btn primary" id="btn-predict" type="button">提交预测</button>
+          <div class="inline-error" id="predict-error" hidden></div>
+          <div class="feedback" id="predict-feedback"></div>
+        </div>
+      </details>
+
+      <details class="acc">
+        <summary>接线与取样</summary>
+        <div class="acc-body">
+          <div class="row">
+            <label>探针 A（青）<select id="probe-a"></select></label>
+            <label>探针 B（橙）<select id="probe-b"></select></label>
+            <label>测量模式<select id="measure-mode">
+              <option value="voltage">电压 (V)</option>
+              <option value="current">电流 (mA)</option>
+            </select></label>
+          </div>
+          <div class="row">
+            <label>电源 E (V)<input type="number" id="cfg-E" step="0.1" min="0" max="12"></label>
+            <label>R1 (Ω)<input type="number" id="cfg-R1" min="100"></label>
+            <label>R2 (Ω)<input type="number" id="cfg-R2" min="100"></label>
+          </div>
+          <button class="btn" id="btn-apply-config" type="button">应用参数</button>
+          <button class="btn primary" id="btn-measure" type="button">测量</button>
+          <div class="inline-error" id="measure-error" hidden></div>
+          <div class="row">
+            <label>端子<select id="map-terminal"></select></label>
+            <label>对应 net<select id="map-net">
+              <option value="P">P（电源正）</option><option value="N">N（中点）</option><option value="G">G（电源负）</option>
+            </select></label>
+          </div>
+          <button class="btn" id="btn-submit-mapping" type="button">提交端子映射</button>
+          <div id="mapping-result"></div>
+          <h4>模拟观测控制（非相机识别）</h4>
+          <div class="row">
+            <label>观测模式<select id="obs-mode">
+              <option value="unknown">未知</option>
+              <option value="visible">无遮挡可见</option>
+              <option value="occluded">遮挡</option>
+            </select></label>
+            <label class="checkbox">
+              <input type="checkbox" id="obs-manual">
+              <span>手动确认端子映射</span>
+            </label>
+          </div>
+          <div class="row" id="obs-occlude-row" hidden>
+            <span>遮挡端子：</span>
+            <label><input type="checkbox" class="obs-occlude" value="E_pos"> E+</label>
+            <label><input type="checkbox" class="obs-occlude" value="E_neg"> E−</label>
+            <label><input type="checkbox" class="obs-occlude" value="R1_a"> R1a</label>
+            <label><input type="checkbox" class="obs-occlude" value="R1_b"> R1b</label>
+            <label><input type="checkbox" class="obs-occlude" value="R2_a"> R2a</label>
+            <label><input type="checkbox" class="obs-occlude" value="R2_b"> R2b</label>
+          </div>
+          <div id="obs-status" class="feedback"></div>
+        </div>
+      </details>
+
+      <details class="acc">
+        <summary>比较候选</summary>
+        <div class="acc-body">
+          <h4>证据记录</h4>
+          <div id="evidence-list"></div>
+          <div id="stale-evidence" class="stale"></div>
+          <h4>候选空间（教学假设，非真实故障诊断）</h4>
+          <div id="candidate-list"></div>
+          <h4>补充测量前的假设对比</h4>
+          <div class="row">
+            <label>探针 A<select id="cmp-a"></select></label>
+            <label>探针 B<select id="cmp-b"></select></label>
+            <label>模式<select id="cmp-mode">
+              <option value="voltage">电压 V</option>
+              <option value="current">电流 mA</option>
+            </select></label>
+          </div>
+          <div class="row">
+            <label>候选 A 预期<input type="number" id="cmp-r1" step="0.001"></label>
+            <label>候选 B 预期<input type="number" id="cmp-r2" step="0.001"></label>
+            <label>理由<select id="cmp-reason">
+              <option value="different_predictions">两候选预测值不同</option>
+              <option value="check_source">核查电源</option>
+              <option value="check_current">核查电流</option>
+            </select></label>
+          </div>
+          <button class="btn" id="btn-compare" type="button">记录假设对比</button>
+          <div id="cmp-result"></div>
+          <div class="inline-error" id="cmp-error" hidden></div>
+        </div>
+      </details>
+
+      <details class="acc">
+        <summary>提交证据</summary>
+        <div class="acc-body">
+          <h4>结构化因果主张</h4>
+          <div class="row">
+            <label>目标类型<select id="claim-goal">
+              <option value="restore_nominal">恢复标称</option>
+              <option value="ratio_design">比值达成</option>
+            </select></label>
+            <label>主张（中文选择）<select id="claim-code">
+              <option value="">未选</option>
+              <option value="correct">配置正确</option>
+              <option value="wrong_r2">R2 错装为 1kΩ</option>
+              <option value="source_375">电源实际 3.75V</option>
+              <option value="ratio_2_3">比值达成 2/3</option>
+            </select></label>
+          </div>
+          <div class="row">
+            <label>改前电流 I (mA)<input type="number" id="claim-i-before" step="0.001"></label>
+            <label>改后电流 I (mA)<input type="number" id="claim-i-after" step="0.001"></label>
+          </div>
+          <div class="row">
+            <label>改前总功率 P (mW)<input type="number" id="claim-p-before" step="0.001"></label>
+            <label>改后总功率 P (mW)<input type="number" id="claim-p-after" step="0.001"></label>
+          </div>
+          <label>排除候选<select id="claim-exclude">
+            <option value="">未选</option>
+            <option value="A">排除 A（R2 误装 1kΩ）</option>
+            <option value="B">排除 B（电源 3.75V）</option>
+          </select></label>
+          <label>限制达成<select id="claim-limit">
+            <option value="">未选</option>
+            <option value="ok">在限制内</option>
+            <option value="exceeds">超限</option>
+          </select></label>
+          <label>自由说明<textarea id="claim-text" rows="2" placeholder="教师会阅读；自由文字不自动判分"></textarea></label>
+          <h4>已选证据（当前有效 / 已过期）</h4>
+          <div id="claim-evidence-summary"></div>
+          <button class="btn primary" id="btn-submit-claim" type="button">提交因果主张</button>
+          <div class="inline-error" id="claim-error" hidden></div>
+        </div>
+      </details>
+    </div>
+
+    <!-- 教师面板（仅教师角色可见） -->
+    <div class="card teacher-card hidden" id="teacher-card">
+      <h3>教师教学调节</h3>
+      <div class="teacher-evidence" id="teacher-evidence"></div>
+
+      <h4>发起干预（不同困惑类别）</h4>
+      <div class="row">
+        <label>困惑类别<select id="intervene-class">
+          <option value="node_mapping">端子/net 映射不清</option>
+          <option value="hypothesis_test">假设对比设计</option>
+          <option value="ratio_vs_absolute">比值 vs 绝对值工作点</option>
+          <option value="evidence_reasoning">证据推理</option>
+        </select></label>
+      </div>
+      <label>干预评语（必填）<input type="text" id="intervene-comment" placeholder="针对学生当前卡点"></label>
+      <button class="btn" id="btn-teacher-intervene" type="button">发起干预</button>
+      <div class="inline-error" id="intervene-error" hidden></div>
+
+      <h4>教师点评</h4>
+      <div class="row">
+        <label>困惑类别<select id="teacher-class">
+          <option value="needs_mapping">端子/net 映射不清</option>
+          <option value="needs_causal_link">因果链跳跃</option>
+          <option value="needs_absolute_comparison">缺绝对值/工作点比较</option>
+          <option value="reasoned_with_limits">有据且在限内</option>
+        </select></label>
+        <label>后续<select id="teacher-next">
+          <option value="reexplain">要求再解释</option>
+          <option value="transfer">迁移到新题</option>
+          <option value="record_review">记录点评</option>
+        </select></label>
+      </div>
+      <label>评语（必填）<input type="text" id="teacher-comment" placeholder="给学生的具体反馈"></label>
+      <button class="btn" id="btn-teacher-review" type="button">提交教师点评</button>
+      <div class="inline-error" id="teacher-error" hidden></div>
+    </div>
+
+    <!-- 学生回应教师干预（学生角色可见） -->
+    <div class="card" id="respond-card">
+      <h3>对教师干预的回应</h3>
+      <input type="text" id="respond-text" placeholder="回答教师的问题（可先在端子映射区提交结构映射）">
+      <button class="btn" id="btn-respond" type="button">提交回应</button>
+      <div id="teacher-responses"></div>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn ghost" id="btn-hint" type="button">获取提示</button>
+      <button class="btn ghost" id="btn-pause" type="button">暂停</button>
+      <button class="btn ghost" id="btn-reset" type="button">重置</button>
+    </div>
+    <div class="paused-banner" id="paused-banner" hidden>课堂暂停 · 编辑锁定 · 仍可观察模型</div>
+    <p class="boundary">数字概念原型，非真实仪器；角色仅教学演示，不涉及鉴权或硬件供电。</p>
+  </aside>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
