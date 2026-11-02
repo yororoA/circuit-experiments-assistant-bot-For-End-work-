@@ -123,12 +123,15 @@ export function createLab({task,scenarioId}={}){
     predict({u2,iMa,pMw}={}){
       if(!(canStudent()&&(phase==='orientation'||phase==='exploration'))) return ret(false,'wrong_phase');
       if(!isNum(u2)||!isNum(iMa)||!isNum(pMw)) return ret(false,'bad_prediction');
-      const idealU=FIXTURES.nominal.E*FIXTURES.nominal.R2/(FIXTURES.nominal.R1+FIXTURES.nominal.R2);
-      const idealI=FIXTURES.nominal.E/(FIXTURES.nominal.R1+FIXTURES.nominal.R2)*1000;
+      const ref = task==='ratio_design' ? actual : FIXTURES.nominal;
+      const idealU=ref.E*ref.R2/(ref.R1+ref.R2);
+      const idealI=ref.E/(ref.R1+ref.R2)*1000;
+      const idealP=ref.E*idealI;
       let fb=[];
-      if(Math.abs(u2-idealU)>0.5) fb.push(`u2偏离理想${idealU.toFixed(2)}V`);
-      if(Math.abs(iMa-idealI)>0.3) fb.push(`iMa偏离理想${idealI.toFixed(2)}mA`);
-      prediction={u2,iMa,pMw,revision}; predictionHistory.push(prediction); predictionFeedback=fb.join(';')||null;
+      if(Math.abs(u2-idealU)>0.3) fb.push(`u2偏离参考${idealU.toFixed(3)}V`);
+      if(Math.abs(iMa-idealI)>0.3) fb.push(`iMa偏离参考${idealI.toFixed(3)}mA`);
+      prediction={u2,iMa,pMw,revision,referenceConfig:{E:ref.E,R1:ref.R1,R2:ref.R2}};
+      predictionHistory.push(prediction); predictionFeedback=fb.join(';')||null;
       phase='exploration'; return ret(true);
     },
 

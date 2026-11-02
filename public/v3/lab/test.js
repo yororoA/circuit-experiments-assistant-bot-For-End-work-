@@ -83,5 +83,15 @@ t('A scenario exclude A invalid', !r.ok && r.error==='exclusion_relation_invalid
 r=l.submitClaim({goalType:'restore_nominal',claimCode:'x',evidenceIds:[3,4],excludedCandidateIds:['B'],comparison:{iAfterMa:1.67,pAfterMw:8.33},freeText:'x'});
 t('A scenario exclude B valid', r.ok, r.error);
 
+// 8. ratio scaled correct prediction no false feedback
+l=createLab({task:'ratio_design',scenarioId:'scaled'});
+r=l.predict({u2:3.333,iMa:3.333,pMw:16.667});
+t('ratio scaled no false feedback', !r.snapshot.predictionFeedback, r.snapshot.predictionFeedback);
+
+// 9. restore nominal correct prediction
+l=createLab({task:'restore_nominal',scenarioId:'A'});
+r=l.predict({u2:3.333,iMa:1.667,pMw:8.333});
+t('restore nominal no false feedback', !r.snapshot.predictionFeedback, r.snapshot.predictionFeedback);
+
 console.log(`\n${pass} pass, ${fail} fail`);
 process.exit(fail?1:0);

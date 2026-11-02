@@ -279,13 +279,16 @@ function render() {
   const last = s.lastMeasurement;
   if (last && last.usable) {
     $('meter-readout').textContent = last.value.toFixed(3);
-    $('meter-sub').textContent = `仿真测量 · ${TERMINAL_ZH[last.a]||last.a}-${TERMINAL_ZH[last.b]||last.b} · ${last.unit}`;
+    $('meter-sub').textContent = `仿真测量 · ${TERMINAL_ZH[last.a]||last.a}-${TERMINAL_ZH[last.b]||last.b}`;
+    $('meter-mode').textContent = last.unit;
   } else if (s.prediction) {
     $('meter-readout').textContent = s.prediction.u2.toFixed(3);
     $('meter-sub').textContent = '预测值，尚未测量';
+    $('meter-mode').textContent = 'V';
   } else {
     $('meter-readout').textContent = '--.--';
     $('meter-sub').textContent = '先预测再测量';
+    $('meter-mode').textContent = '—';
   }
   $('predict-feedback').textContent = s.predictionFeedback || '';
 
@@ -385,6 +388,7 @@ function init() {
         onWireClick: () => {},
       });
       if (state.scene.start) state.scene.start();
+      state.scene.setView?.('front');
       // 渲染第一帧后隐藏占位
       requestAnimationFrame(() => { $('scene-placeholder').hidden = true; });
     } catch (e) {
