@@ -378,9 +378,9 @@ function render() {
     el.style.stroke = conn ? '#3a3a3a' : '#bbb';
     el.style.strokeDasharray = conn ? '' : '4 3';
   };
-  svgWire('#svg-wire-1', isConn('E_pos','R1_a'));
-  svgWire('#svg-wire-2', isConn('R1_b','R2_a'));
-  svgWire('#svg-wire-3', isConn('R2_b','E_neg'));
+  svgWire('svg-wire-1', isConn('E_pos','R1_a'));
+  svgWire('svg-wire-2', isConn('R1_b','R2_a'));
+  svgWire('svg-wire-3', isConn('R2_b','E_neg'));
 
   // evidence
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
