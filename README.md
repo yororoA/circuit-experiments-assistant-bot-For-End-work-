@@ -1,41 +1,31 @@
-# circuit-experiments-assistant-bot-For-End-work-
+# CircuitBridge · 循证观察桥
 
-面向大学基础电路实验（单电源串联分压/桥式）的混合增强智能助教机器人 · Three.js 3D 数字原型 V2。
+面向大学入门 DC 串联分压实验的数字概念原型。把电路原理图、仿真面包板、测量读数与显式因果主张链接起来，让学生在"预测—测量—比较—提交证据—教师反馈"的闭环中学习电路推理。
 
-- **在线演示（V2）**：https://yororoa.github.io/circuit-experiments-assistant-bot-For-End-work-/
-- **V2 入口**：[`public/v2/index.html`](public/v2/index.html)
-- **V2 lab engine**：[`public/v2/lab/`](public/v2/lab/)（纯逻辑核心，22 node tests）
-- **V2 模型目录**：[`public/v2/assets/glb/`](public/v2/assets/glb/)（B01–B10 + `robot_whole.glb`，米制，root scale 0.001）
-- **模型 manifest**：[`public/v2/docs/manifest.json`](public/v2/docs/manifest.json)（v2.0.4，实际 bbox / 顶点数 / sha256）
-- **V1 旧版（历史）**：[`public/index.html`](public/index.html)
+- **在线演示（V3）**：https://yororoa.github.io/circuit-experiments-assistant-bot-For-End-work-/
+- 设计契约：[`docs/v3-design-contract.md`](docs/v3-design-contract.md)
+- 验收摘要：[`docs/v3-validation-summary.md`](docs/v3-validation-summary.md)
 
-## V2 已实现（本仓库生成物）
+## 两类任务
 
-- Three.js 0.160 ESM + WebGL（软件 SwiftShader 已验证），PBR 材质，OrbitControls 相机轨道控制。
-- 11 个 GLB 零件模型（B01–B10 + 整机），GLTFLoader 加载，米制单位，root wrapper scale 0.001。
-- lab engine v2.2.1：纯逻辑核心，精确点读数，候选 ±5% 允许带，22 node tests 全过。
-- 两种教学 tab：
-  - **自由探索**：学生改 E/R/topology，先预测 U_NG 再两探针测量验证（不显示故障原因卡）。
-  - **盲诊断（challenge）**：actual 隐藏，学生测够 U_NG+U_PG 申请教师复核，批准后学生自输校正值，错选不收敛不能反思。
-- 角色切换（教师/学生）+ 权限门：教师复核批准、学生 applyCorrection、教师不能代学生 reflect。
-- 单零件隔离 / 爆炸视图 / 模型查看模式。
-- P/N/G 探针在桌面 3D 场景中可点击（raycast），与 UI 探针选择同步。
-- pause/resume：暂停时禁动作，相机可观察；reset 复位探针与证据。
-- GLB 导出按钮（选中零件，home pose，米制）。
-- 屏幕/PCB 背板分离，near=1/far=1200 深度精度（无 z-fighting 绿纹）。
+1. **restore_nominal（恢复标称）**：诊断指定故障并恢复 E=5V、R1=1kΩ、R2=2kΩ 与正确串联拓扑。只把 U2 调回 2V 不算恢复。
+2. **ratio_design（比例设计）**：达成 k=U2/E=2/3，须比较基线与方案的总电流、总功率与元件功率，并报告是否满足题目限值。相同电压比不等于全电路等效。
 
-## 边界声明（重要，勿误读）
+## 教学边界（重要）
 
-- 本仓库为**离线数字原型**，未接真实仪器、摄像头、麦克风、语音识别/TTS。
-- 所有读数为电路方程精确点示例，不判合格、不做硬件安全联锁/PLC 切断。
-- 摄像头仅几何外观，不实际识别色环/拓扑；AI 仅规则引擎，不做真实学习分析/BKT/RAG。
-- 教师保留目标设定、上电授权、最终评分权；机器人不碰线、不控电源。
-- GLB 为概念演示尺寸，非制造 CAD/3D 打印合格依据。
-- 软件 WebGL 验证不等于所有 GPU/浏览器通用通过。
-- 报告（DOCX）与课程材料不在本仓库。
+- **证据 vs 理解硬边界**：引擎只校验结构化数值/关系证据；自由文本不自动判"掌握"。教师判断因果解释、概念混淆与迁移。
+- **教师教育调节**：教师面板暴露错误概念证据，应用分类会改变学生可见引导与后续响应路径；不是机械审批每次测量。
+- **观察桥增量待证**：机器人镜头提供空间定位与观察不确定性的假设机制；相对平板视图的优劣是研究问题，本原型不证明机器人必要或更优。
+- **软件 WebGL 验证**：headless SwiftShader 软件渲染验证，不等于所有 GPU/浏览器通用通过。
+- **未接真实硬件/AI**：无摄像头识别、无 LLM 语义评分、无设备供电控制、无 TTS、无真实学习效果实验。
 
-## 技术栈
+## 目录结构
 
-- 原生 Three.js ESM（无构建步骤），vendor 库放 `public/vendor/`（r160 官方对齐）。
-- lab engine 为 native ES module，node 可跑 tests（`node public/v2/lab/tests/run-tests.mjs`）。
-- GitHub Pages 从 `main` 分支根目录静态托管。
+- `public/v3/` — V3 数字原型入口
+  - `index.html` / `style.css` / `app.js` — 学生工作台与教师面板
+  - `scene.js` — Three.js r160 观察桥场景
+  - `lab/lab-engine.js` — 确定性证据引擎（14 node tests）
+  - `assets/glb/` — 12 个中性米制 GLB 零件
+  - `docs/manifest.json` — 零件清单与几何实测
+- `public/v2/` — V2 历史版本（保留）
+- `public/index.html` — V1 历史样机（保留）
