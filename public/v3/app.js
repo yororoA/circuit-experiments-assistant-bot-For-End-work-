@@ -354,9 +354,14 @@ function render() {
 
   if (state.scene?.updateScene) {
     try {
+      // Precedence: teacherReview > claim > intervention > invalid > ambiguous > measurement > prediction > orientation
+      const hasReview = !!s.teacherReview;
       const activeIntervention = s.interventions?.[s.interventions.length - 1] || null;
+      const interventionForVisual = hasReview ? null : activeIntervention;
+      // Scene checks claim before intervention; suppress claim visual when intervention is active
+      const claimSubmitted = !interventionForVisual && (s.phase === 'evidence_submitted');
       state.scene.updateScene({
-        status: s.sceneState?.status || s.phase,
+        status: s.phase,
         probes: s.probes,
         wires: s.wires,
         netMap: s.terminalNetMap,
@@ -365,10 +370,10 @@ function render() {
         lastMeasurement: s.lastMeasurement,
         candidatesOpen: (s.candidates || []).filter(c => c.compatible).map(c => c.id),
         observation: s.observation,
-        teacherPrompt: activeIntervention,
-        teacherIntervention: activeIntervention,
+        teacherPrompt: interventionForVisual,
+        teacherIntervention: interventionForVisual,
         teacherReview: s.teacherReview,
-        claim: { submitted: s.phase === 'evidence_submitted' || !!s.teacherReview },
+        claim: { submitted: claimSubmitted },
         prediction: { submitted: !!s.prediction, value: s.prediction?.u2 ?? null },
         manualConfirmed: s.observation?.manualConfirmed,
       });
@@ -399,8 +404,11 @@ function init() {
       });
       if (state.scene.start) state.scene.start();
       state.scene.setView?.('front');
-      // 渲染第一帧后隐藏占位
-      requestAnimationFrame(() => { $('scene-placeholder').hidden = true; });
+      // 渲染第一帧后隐藏占位并触发一次状态同步
+      requestAnimationFrame(() => {
+        $('scene-placeholder').hidden = true;
+        render();
+      });
     } catch (e) {
       console.error('scene mount failed:', e);
       $('scene-placeholder').querySelector('.ph-title').textContent = '3D 实验台不可用';
