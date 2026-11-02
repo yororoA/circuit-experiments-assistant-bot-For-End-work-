@@ -60,6 +60,16 @@ function handleTerminalClick(terminal) {
     ind.setAttribute('cy', node.getAttribute('cy'));
     ind.setAttribute('opacity', '1');
   }
+  // sync to engine probes so 3D scene highlights update
+  const s = state.lab.getSnapshot();
+  const pa = new Set(s.permittedActions);
+  if (pa.has('setProbes')) {
+    state.lab.setProbes({
+      a: $('probe-a').value, b: $('probe-b').value,
+      mode: $('measure-mode').value,
+    });
+    render();
+  }
 }
 
 function bindEvents() {
